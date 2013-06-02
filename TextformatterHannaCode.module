@@ -75,18 +75,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	 *
 	 */
 	public function formatValue(Page $page, Field $field, &$value) {
-		$value = $this->render($value); 
-	}
-
-	/**
-	 * Process $value to render any Hanna tags within it
-	 *
-	 * @param string $value
-	 * @return string
-	 *
-	 */
-	public function render($value) {
-
+	
 		$openTag = $this->openTag; 
 		$closeTag = $this->closeTag; 
 
@@ -122,6 +111,17 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 			$value = str_replace($matches[0][$key], $replacement, $value); 
 		}
 
+	}
+
+	/**
+	 * Process $value to render any Hanna tags within it (for API use)
+	 *
+	 * @param string $value
+	 * @return string
+	 *
+	 */
+	public function render($value) {
+		$value = $this->formatValue(new NullPage(), new Field(), $value);
 		return $value; 
 	}
 
@@ -198,7 +198,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 			$sql = "SELECT `id`, `type`, `code` FROM hanna_code WHERE `name`='" . $this->db->escape_string($name) . "'";
 			$result = $this->db->query($sql); 
 			if(!$result->num_rows) return false;
-			list($id, $type, $code) = $result->fetch_assoc();
+			list($id, $type, $code) = $result->fetch_row();
 			$this->db->query("UPDATE hanna_code SET accessed=" . time() . " WHERE id=" . (int) $id); 
 		}
 
