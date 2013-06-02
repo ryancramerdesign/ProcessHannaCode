@@ -95,15 +95,17 @@ foreach($parent->children as $child) {
 }
 ```
 
-- Go back and edit the page where you previously inserted the `[[children]]` tag, and change it to: `[[children parent=1]` optionally replacing the homepage ID (1) with another page path or ID. 
+- Go back and edit the page where you previously inserted the `[[children]]` tag, and change it to:
+`[[children, parent=1]` (specifying the homepage) or `[[children, parent=/path/to/some/parent/]]` if you want to try something else. 
+
 - View the page and you should now see it showing the children of the homepage (or of another parent you specified). 
 
 **Please see the Javascript and PHP usage notes on the Hanna code entry screen.**
 
 ## Security 
 
-There are security implications with a tool that will let you enter unfiltered Javascript and/or PHP code from your web browser.
-As a result, Hanna codes are meant for definition only by superusers at this time. 
+There are major security implications with a tool that will let you enter unfiltered text and code from your web browser.
+As a result, Hanna codes are meant for definition only by superusers and we recommend keeping it that way. 
 
 
 ------
