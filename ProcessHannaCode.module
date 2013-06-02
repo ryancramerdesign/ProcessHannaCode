@@ -210,12 +210,17 @@ class ProcessHannaCode extends Process {
 		}
 
 		$form->processInput($this->input->post); 
+		$name = $form->get('hc_name')->value; 
+		$type = (int) $form->get('hc_type')->value; 
+		$code = $form->get('hc_code')->value; 
+
+		if(empty($name) || empty($code)) throw new WireException("Missing required information"); 
 
 		$sql = 	($id ? "UPDATE " : "INSERT INTO ") . "hanna_code " . 
 			"SET " . 
-			"`name`='" . $this->db->escape_string($form->get('hc_name')->value) . "', " . 
-			"`type`=" . ((int) $form->get('hc_type')->value) . ", " . 
-			"`code`='" . $this->db->escape_string($form->get('hc_code')->value) . "', " . 
+			"`name`='" . $this->db->escape_string($name) . "', " . 
+			"`type`=$type, " . 
+			"`code`='" . $this->db->escape_string($code) . "', " . 
 			"`modified`=" . time() . " " . 
 			($id ? "WHERE id=$id" : ""); 
 
