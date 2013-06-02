@@ -1,0 +1,284 @@
+<?php
+
+/**
+ * Process Hanna Code
+ *
+ * ProcessWire 2.x 
+ * Copyright (C) 2013 by Ryan Cramer 
+ * Licensed under GNU/GPL v2, see LICENSE.TXT
+ * 
+ * http://processwire.com
+ *
+ */
+
+class ProcessHannaCode extends Process {
+
+	/**
+	 * Return information about this module (required)
+	 *
+	 */
+	public static function getModuleInfo() {
+		return array(
+			'title' => 'Hanna Code', 
+			'summary' => 'Easily insert any complex HTML, Javascript or PHP output in your ProcessWire content by creating your own Hanna code tags.',
+			'version' => 1, 
+			'permission' => 'hanna-code', 
+			'requires' => 'TextformatterHannaCode'
+			); 
+	}
+
+	/**
+	 * The name that will be used for the page this module creates
+	 *
+	 */
+	const pageName = 'hanna-code';
+
+	/**
+	 * This is an optional initialization function called before any execute functions.
+	 *
+	 */
+	public function init() {
+		if(!$this->user->isSuperuser()) throw new WirePermissionException("This module may only be used by superuser"); 
+		parent::init(); // required
+		$data = $this->modules->getModuleConfigData('TextformatterHannaCode'); 
+		$this->set('openTag', isset($data['openTag']) ? $data['openTag'] : TextformatterHannaCode::DEFAULT_OPEN_TAG); 
+		$this->set('closeTag', isset($data['closeTag']) ? $data['closeTag'] : TextformatterHannaCode::DEFAULT_CLOSE_TAG); 
+		$this->set('typeLabels', array(
+			0 => $this->_('Text/HTML'),
+			1 => $this->_('Javascript'),
+			2 => $this->_('PHP')
+			));
+		
+	}
+
+	/**
+	 * This function is executed when a page with your Process assigned is accessed. 
+ 	 *
+	 */
+	public function ___execute() {
+
+		$table = $this->modules->get('MarkupAdminDataTable'); 
+		$table->setEncodeEntities(false); 
+		$table->headerRow(array(
+			$this->_x('Name', 'list-table'), 
+			$this->_x('Tag', 'list-table'), 
+			$this->_x('Type', 'list-table'),
+			$this->_x('Modified', 'list-table'),
+			$this->_x('Accessed', 'list-table')
+			)); 
+
+		$typeLabels = $this->typeLabels;
+
+		$result = $this->db->query("SELECT id, name, type, modified, accessed FROM hanna_code ORDER BY name"); 
+
+		while($row = $result->fetch_row()) {
+			list($id, $name, $type, $modified, $accessed) = $row; 
+			if(preg_match('/[a-zA-Z0-9]$/', $this->openTag)) {
+				$tag = $this->openTag . " name=\"$name\" " . $this->closeTag;
+			} else {
+				$tag = $this->openTag . $name . $this->closeTag; 
+			}
+			$table->row(array(
+				wire('sanitizer')->entities($name) => "edit/?id=$id",
+				"<code>" . wire('sanitizer')->entities($tag) . "</code>", 
+				$typeLabels[$type],
+				wireRelativeTimeStr($modified),
+				wireRelativeTimeStr($accessed)
+				)); 
+		}
+
+		if(!$result->num_rows) $this->message($this->_('No Hanna Codes yet, go ahead and add one!')); 
+
+		$table->action(array($this->_('Add New') => 'edit/')); 
+		return $table->render(); 
+	}	
+
+	/**
+	 * Called when the URL is this module's page URL + "/something/"
+	 *
+	 */
+	public function ___executeEdit() {
+
+		// set a new headline, replacing the one used by our page (optional)
+
+		// add a breadcrumb that returns to our main page 
+		$this->breadcrumbs->add(new Breadcrumb('../', $this->page->title)); 
+
+		$id = (int) $this->input->get->id; 
+		if($id) {
+			$result = $this->db->query("SELECT name, type, code FROM hanna_code WHERE id=$id"); 
+			if(!$result->num_rows) throw new WireException("Unknown ID"); 
+			list($name, $type, $code) = $result->fetch_row();
+			Wire::setFuel('processHeadline', $this->_("Edit Hanna Code:") . " $name");
+		} else {
+			$name = '';
+			$type = 0;
+			$code = '';
+			Wire::setFuel('processHeadline', $this->_("Adding New Hanna Code")); 
+		}
+
+		$form = $this->modules->get('InputfieldForm'); 
+		$form->action = './';
+		$form->method = 'post';
+
+		$f = $this->modules->get('InputfieldName'); 
+		$f->attr('name', 'hc_name'); 
+		$f->attr('value', $name); 
+		$form->add($f); 
+
+		$f = $this->modules->get('InputfieldRadios'); 
+		$f->attr('name', 'hc_type'); 
+		foreach($this->typeLabels as $key => $label) $f->addOption($key, $label); 
+		$f->attr('value', $type); 
+		$f->label = $this->_('Type'); 
+		$f->optionColumns = 1; 
+		$form->add($f); 
+
+		$f = $this->modules->get('InputfieldMarkup'); 
+		$f->label = $this->_('PHP and Javascript Usage Notes'); 
+		$f->value = "
+
+		<h2>PHP Usage Notes</h2>	
+		<p>1. Your code should 'echo' or 'print' the value you want to appear as the replacement for the tag.</p>
+		<p>2. It is not necessary to begin or close your statement with open/close PHP tags. Though you may use them when/if necessary.</p>
+		<p>3. If attributes are specified in the tag, they will appear as directly accessible variables to your PHP code.
+		For instance, in the tag [[hello_world first_name=Karena]], your code will have a \$first_name variable populated with 'Karena'.
+		To check for the presence of these attributes, use isset(\$first_name); for example.</p>
+		<p>4. All attributes are also populated to an \$attr array of name=value (i.e. \$attr['first_name'] == 'Karena'), in case you find this syntax preferable.</p>
+		<p>5. Your code is executed the same way as a ProcessWire template file and all API variables are locally scoped. Meaning, you can call upon \$page, \$pages, etc. directly.</p>
+		<p>6. These code snippets are written to /site/assets/cache/HannaCode/[tag-name].php and directly executed rather than eval'd.</p>
+		<p>7. The keywords 'name', 'attr', and all ProcessWire API variable names are reserved words and should not be used for attribute names.</p>
+	
+		<h2>Javascript Usage Notes</h2>	
+		<p>1. It is not necessary to include &lt;script&gt; tags in your code unless you want to. They will be automatically inserted when not already present.</p>
+		<p>2. If attributes are specified in the tag, they will appear as directly accessible variables to your Javascript code.
+		For instance, in the tag [[hello_world first_name=Karena]], your code will have a first_name variable populated with 'Karena'.</p>
+		<p>3. All attributes are also populated to an attr object of attr.name=value (i.e. attr.first_name == 'Karena'), in case you find this syntax preferable.</p>
+		<p>4. The keywords 'name' and 'attr' are reserved words and should not be used for attribute names.</p>
+
+		";
+
+		$f->collapsed = Inputfield::collapsedYes; 
+		$form->add($f); 
+
+
+		$f = $this->modules->get('InputfieldTextarea'); 
+		$f->attr('id+name', 'hc_code'); 
+		$f->attr('value', $code); 
+		$f->label = $this->_('Code'); 
+		$f->attr('rows', 20); 
+		$form->add($f); 
+		
+		if($id) {
+			$f = $this->modules->get('InputfieldCheckbox'); 
+			$f->attr('name', 'hc_delete'); 
+			$f->attr('value', $id); 
+			$f->label = $this->_('Delete?'); 
+			$f->collapsed = Inputfield::collapsedYes; 
+			$form->add($f); 
+		}
+
+		$f = $this->modules->get('InputfieldHidden'); 
+		$f->attr('name', 'hc_id'); 
+		$f->attr('value', $id); 
+		$form->add($f); 
+
+		$f = $this->modules->get('InputfieldSubmit'); 
+		$f->attr('name', 'hc_save'); 
+		$form->add($f); 
+
+		if($this->input->post->hc_save) $this->save($form); 
+	
+		return $form->render();	
+	}
+
+	/**
+	 * Save Hanna code
+	 *
+	 */
+	protected function save($form) {
+
+		if(!$this->input->post->hc_save) return false;
+
+		$id = (int) $this->input->post->hc_id; 
+		$delete = (int) $this->input->post->hc_delete; 
+
+		if($delete && $delete === $id) {
+			$this->db->query("DELETE FROM hanna_code WHERE id=$delete LIMIT 1"); 	
+			$this->message($this->_('Deleted Hanna Code')); 
+			$this->session->redirect('../'); 
+		}
+
+		$form->processInput($this->input->post); 
+
+		$sql = 	($id ? "UPDATE " : "INSERT INTO ") . "hanna_code " . 
+			"SET " . 
+			"`name`='" . $this->db->escape_string($form->get('hc_name')->value) . "', " . 
+			"`type`=" . ((int) $form->get('hc_type')->value) . ", " . 
+			"`code`='" . $this->db->escape_string($form->get('hc_code')->value) . "', " . 
+			"`modified`=" . time() . " " . 
+			($id ? "WHERE id=$id" : ""); 
+
+		$result = $this->db->query($sql); 
+
+		if($result) {
+			$this->message($this->_("Saved Hanna Code")); 				
+			$this->session->redirect("../"); 
+		} else {
+			$this->error("Error saving"); 
+			return false;
+		}
+	}
+
+	/**
+	 * Called only when your module is installed
+	 *
+	 * This version creates a new page with this Process module assigned. 
+	 *
+	 */
+	public function ___install() {
+
+		// create the page our module will be assigned to
+		$page = new Page();
+		$page->template = 'admin';
+		$page->name = self::pageName; 
+
+		// installs to the admin "Setup" menu ... change as you see fit
+		$page->parent = $this->pages->get($this->config->adminRootPageID)->child('name=setup');
+		$page->process = $this; 
+
+		// we will make the page title the same as our module title
+		// but you can make it whatever you want
+		$info = self::getModuleInfo();
+		$page->title = $info['title'];
+
+		// save the page
+		$page->save();
+
+		// tell the user we created this page
+		$this->message("Created Page: {$page->path}"); 
+	}
+
+	/**
+	 * Called only when your module is uninstalled
+	 *
+	 * This should return the site to the same state it was in before the module was installed. 
+	 *
+	 */
+	public function ___uninstall() {
+
+		// find the page we installed, locating it by the process field (which has the module ID)
+		// it would probably be sufficient just to locate by name, but this is just to be extra sure.
+		$moduleID = $this->modules->getModuleID($this); 
+		$page = $this->pages->get("template=admin, process=$moduleID, name=" . self::pageName); 
+
+		if($page->id) {
+			// if we found the page, let the user know and delete it
+			$this->message("Deleting Page: {$page->path}"); 
+			$page->delete();
+		}
+	}
+
+	
+}
+
