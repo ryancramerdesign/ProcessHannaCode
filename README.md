@@ -102,7 +102,7 @@ foreach($parent->children as $child) {
 
 ## Security 
 
-There are security implications with a tool that will let you enter Javascript and/or PHP code from your web browser.
+There are security implications with a tool that will let you enter unfiltered Javascript and/or PHP code from your web browser.
 As a result, Hanna codes are meant for definition only by superusers at this time. 
 
 
