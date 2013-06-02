@@ -4,7 +4,7 @@
 
 This module is based loosely on the [WordPress Hana Code Insert](http://wordpress.org/plugins/hana-code-insert/) plugin.
 
-A Hanna code tag looks like [[hello_world]]. A Hanna code tag with attributes looks like [[hello_world foo="bar" bar="foo"]]
+A Hanna code tag looks like `[[hello_world]]`. A Hanna code tag with attributes looks like [[hello_world foo="bar" bar="foo"]]
 using HTML style attributes or [[hello_world foo=bar, bar=foo]] using ProcessWire selector style attributes. After installing
 the module, you define your Hanna codes in Setup > Hanna Code. 
 
