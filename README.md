@@ -90,7 +90,7 @@ if(isset($parent)) {
   $parent = $page; 
 }
 
-foreach($page->children as $child) {
+foreach($parent->children as $child) {
   echo "<p><a href='$child->url'>$child->title</a>";
 }
 ```
