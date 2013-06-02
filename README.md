@@ -4,8 +4,8 @@
 
 This module is based loosely on the [WordPress Hana Code Insert](http://wordpress.org/plugins/hana-code-insert/) plugin.
 
-A Hanna code tag looks like `[[hello_world]]`. A Hanna code tag with attributes looks like [[hello_world foo="bar" bar="foo"]]
-using HTML style attributes or [[hello_world foo=bar, bar=foo]] using ProcessWire selector style attributes. After installing
+A Hanna code tag looks like `[[hello_world]]`. A Hanna code tag with attributes looks like `[[hello_world foo="bar" bar="foo"]]`
+using HTML style attributes or `[[hello_world foo=bar, bar=foo]]` using ProcessWire selector style attributes. After installing
 the module, you define your Hanna codes in Setup > Hanna Code. 
 
 These Hanna codes that you define can then be entered within your body copy (or other text where you allow) and they will
@@ -22,7 +22,7 @@ should be used around the attribute value when the value contains whitespace or 
 
 1. Place the module files in /site/modules/ProcessHannaCode/
 2. In your admin, click Modules > Check for new modules
-3. Click "install" for **TextformatterHannaCode**
+3. Click "install" for **TextformatterHannaCode** 
 4. Now to go Setup > Fields and locate the Textarea field(s) that you want to use Hanna codes with ("body" for instance).
 5. When editing the field, click the "details" tab, and select "Hanna Code" as the Textformatter. Save.
 6. Now go to Setup > Hanna Code and start defining your Hanna Codes! You may want to use one of the examples from this document to get started.
@@ -33,6 +33,7 @@ Below is a Hanna code tag named hello_world with no attributes. If you pasted th
 whatever the replacement value is that you defined. 
 ```
 [[hello_world]]
+```
 
 Below is a Hanna code tag named hello_world being passed attributes of foo, bar and foobar. If this were a PHP-based 
 Hanna code, it would receive the variables $foo, $bar and $foobar: 
@@ -44,14 +45,15 @@ format you prefer. Just note that unlike regular ProcessWire selectors, quotes (
 any value that has whitespace. 
 ```
 [[hello_world, foo=bar, bar=foo, foobar="foo bar"]]
+```
 
 ## How to use
 
 Please make sure that you have completed the *How to install* section first. Then in your admin, go to Setup > Hanna Codes.
 
 Each Hanna code that you add has a type of either: Text/HTML, Javascript or PHP. The Text/HTML type is literally 
-self explanatory in that your [[custom-tag]] is replaced with exactly the text you paste in. Anywhere that you type your
-[[custom-tag]] in your body copy will be replaced with exactly the static text you defined. 
+self explanatory in that your `[[custom-tag]]` is replaced with exactly the text you paste in. Anywhere that you type your
+`[[custom-tag]]` in your body copy will be replaced with exactly the static text you defined. 
 
 More power opens up with the Javascript and/or PHP types of codes. These codes execute at runtime and thus can contain
 specific logic to produce different results. In fact, PHP Hanna codes have access to the entire ProcessWire API and are
@@ -70,7 +72,7 @@ foreach($page->children as $child) {
 }
 ```
 
-- Now go and edit a page that has children. In the body copy, enter [[children]] in the place where you want the output to appear. 
+- Now go and edit a page that has children. In the body copy, enter `[[children]]` in the place where you want the output to appear. 
 - View the page, and you should see the rendered list of links to children. 
 
 ### PHP example, part 2
@@ -93,7 +95,7 @@ foreach($page->children as $child) {
 }
 ```
 
-- Go back and edit the page where you previously inserted the [[children]] tag, and change it to: [[children parent=1] optionally replacing the homepage ID (1) with another page path or ID. 
+- Go back and edit the page where you previously inserted the `[[children]]` tag, and change it to: `[[children parent=1]` optionally replacing the homepage ID (1) with another page path or ID. 
 - View the page and you should now see it showing the children of the homepage (or of another parent you specified). 
 
 **Please see the Javascript and PHP usage notes on the Hanna code entry screen.**
