@@ -96,7 +96,7 @@ foreach($parent->children as $child) {
 ```
 
 - Go back and edit the page where you previously inserted the `[[children]]` tag, and change it to:
-`[[children, parent=1]` (specifying the homepage) or `[[children, parent=/path/to/some/parent/]]` if you want to try something else. 
+`[[children, parent=1]]` (specifying the homepage) or `[[children, parent=/path/to/some/parent/]]` if you want to try something else. 
 
 - View the page and you should now see it showing the children of the homepage (or of another parent you specified). 
 
