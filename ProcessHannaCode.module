@@ -19,7 +19,7 @@ class ProcessHannaCode extends Process {
 	 */
 	public static function getModuleInfo() {
 		return array(
-			'title' => 'Hanna Code', 
+			'title' => 'Hanna Code (Process)', 
 			'summary' => 'Easily insert any complex HTML, Javascript or PHP output in your ProcessWire content by creating your own Hanna code tags.',
 			'version' => 1, 
 			'permission' => 'hanna-code', 
@@ -214,7 +214,15 @@ class ProcessHannaCode extends Process {
 		$type = (int) $form->get('hc_type')->value; 
 		$code = $form->get('hc_code')->value; 
 
-		if(empty($name) || empty($code)) throw new WireException("Missing required information"); 
+		if(empty($name)) {
+			$form->get('hc_name')->error('Name is required'); 
+			return false;
+		}
+
+		if(empty($code)) {
+			$form->get('hc_code')->error('Code is required'); 
+			return false;
+		}
 
 		$sql = 	($id ? "UPDATE " : "INSERT INTO ") . "hanna_code " . 
 			"SET " . 

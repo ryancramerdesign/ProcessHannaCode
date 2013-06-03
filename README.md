@@ -107,6 +107,15 @@ foreach($parent->children as $child) {
 There are major security implications with a tool that will let you enter unfiltered text and code from your web browser.
 As a result, Hanna codes are meant for definition only by superusers and we recommend keeping it that way. 
 
+## Using Hanna Code from the API
+
+If you want to populate Hanna Code from the API, you can do so using the render() method, like this:
+
+```
+$hanna = $modules->get('TextformatterHannaCode'); 
+$page->body = $hanna->render($page->body); 
+```
+
 
 ------
 Copyright 2013 by Ryan Cramer
