@@ -19,9 +19,9 @@ class ProcessHannaCode extends Process {
 	 */
 	public static function getModuleInfo() {
 		return array(
-			'title' => 'Hanna Code (Process)', 
+			'title' => 'Hanna Code', 
 			'summary' => 'Easily insert any complex HTML, Javascript or PHP output in your ProcessWire content by creating your own Hanna code tags.',
-			'version' => 1, 
+			'version' => 2, 
 			'permission' => 'hanna-code', 
 			'requires' => 'TextformatterHannaCode'
 			); 
@@ -78,6 +78,9 @@ class ProcessHannaCode extends Process {
 			} else {
 				$tag = $this->openTag . $name . $this->closeTag; 
 			}
+
+			if($type & TextformatterHannaCode::TYPE_NOT_CONSUMING) $type -= TextformatterHannaCode::TYPE_NOT_CONSUMING; 
+
 			$table->row(array(
 				wire('sanitizer')->entities($name) => "edit/?id=$id",
 				"<code>" . wire('sanitizer')->entities($tag) . "</code>", 
@@ -124,6 +127,7 @@ class ProcessHannaCode extends Process {
 		$f = $this->modules->get('InputfieldName'); 
 		$f->attr('name', 'hc_name'); 
 		$f->attr('value', $name); 
+		$f->description = $this->_('Any combination of these characters: -_.a-zA-Z0-9 (i.e. letters, numbers, hyphens, underscores, periods, no spaces)');
 		$form->add($f); 
 
 		$f = $this->modules->get('InputfieldRadios'); 
@@ -138,23 +142,33 @@ class ProcessHannaCode extends Process {
 		$f->label = $this->_('PHP and Javascript Usage Notes'); 
 		$f->value = "
 
-		<h2>PHP Usage Notes</h2>	
-		<p>1. Your code should 'echo' or 'print' the value you want to appear as the replacement for the tag.</p>
-		<p>2. It is not necessary to begin or close your statement with open/close PHP tags. Though you may use them when/if necessary.</p>
-		<p>3. If attributes are specified in the tag, they will appear as directly accessible variables to your PHP code.
-		For instance, in the tag [[hello_world first_name=Karena]], your code will have a \$first_name variable populated with 'Karena'.
-		To check for the presence of these attributes, use isset(\$first_name); for example.</p>
-		<p>4. All attributes are also populated to an \$attr array of name=value (i.e. \$attr['first_name'] == 'Karena'), in case you find this syntax preferable.</p>
-		<p>5. Your code is executed the same way as a ProcessWire template file and all API variables are locally scoped. Meaning, you can call upon \$page, \$pages, etc. directly.</p>
-		<p>6. These code snippets are written to /site/assets/cache/HannaCode/[tag-name].php and directly executed rather than eval'd.</p>
-		<p>7. The keywords 'name', 'attr', and all ProcessWire API variable names are reserved words and should not be used for attribute names.</p>
-	
-		<h2>Javascript Usage Notes</h2>	
-		<p>1. It is not necessary to include &lt;script&gt; tags in your code unless you want to. They will be automatically inserted when not already present.</p>
-		<p>2. If attributes are specified in the tag, they will appear as directly accessible variables to your Javascript code.
-		For instance, in the tag [[hello_world first_name=Karena]], your code will have a first_name variable populated with 'Karena'.</p>
-		<p>3. All attributes are also populated to an attr object of attr.name=value (i.e. attr.first_name == 'Karena'), in case you find this syntax preferable.</p>
-		<p>4. The keywords 'name' and 'attr' are reserved words and should not be used for attribute names.</p>
+		<div class='ui-helper-clearfix'>
+			<div class='HannaCodeUsageNote'>
+				<h2>PHP Usage Notes</h2>	
+				<ol>
+				<li>Your code should 'echo' or 'print' the value you want to appear as the replacement for the tag.</li>
+				<li>It is not necessary to begin or close your statement with open/close PHP tags. Though you may use them when/if necessary.</li>
+				<li>If attributes are specified in the tag, they will appear as directly accessible variables to your PHP code.
+				For instance, in the tag <code>[[hello_world first_name=Karena]]</code>, your code will have a <code>\$first_name</code> variable populated with 'Karena'.
+				To check for the presence of these attributes, use <code>isset(\$first_name);</code> for example.</li>
+				<li>All attributes are also populated to an <code>\$attr</code> array of name=value (i.e. <code>\$attr['first_name'] == 'Karena'</code>), in case you find this syntax preferable.</li>
+				<li>Your code is executed the same way as a ProcessWire template file and all API variables are locally scoped. Meaning, you can call upon <code>\$page</code>, <code>\$pages</code>, etc. directly.</li>
+				<li>These code snippets are written to <code>/site/assets/cache/HannaCode/[tag-name].php</code> and directly executed rather than eval'd.</li>
+				</ol>
+			</div>
+
+			<div class='HannaCodeUsageNote'>
+				<h2>Javascript Usage Notes</h2>	
+				<ol>
+				<li>It is not necessary to include <code>&lt;script&gt;</code> tags in your code unless you want to. They will be automatically inserted when not already present.</li>
+				<li>If attributes are specified in the tag, they will appear as directly accessible variables to your Javascript code.
+				For instance, in the tag <code>[[hello_world first_name=Karena]]</code>, your code will have a first_name variable populated with 'Karena'.</li>
+				<li>All attributes are also populated to an <code>attr</code> object of <code>attr.name=value</code> (i.e. <code>attr.first_name == 'Karena'</code>), in case you find this syntax preferable.</li>
+				</ol>
+				<h2>Please Note</h3>
+				<p>The keywords <code>name</code>, <code>attr</code>, and all ProcessWire API variable names are reserved words and should not be used for attribute names.</p>
+			</div>
+		</div>
 
 		";
 
@@ -168,6 +182,19 @@ class ProcessHannaCode extends Process {
 		$f->label = $this->_('Code'); 
 		$f->attr('rows', 20); 
 		$form->add($f); 
+
+		$yes = $this->_('Yes');
+		$no = $this->_('No'); 
+		$value = $type & TextformatterHannaCode::TYPE_NOT_CONSUMING ? 1 : 0;
+		$f = $this->modules->get('InputfieldRadios'); 
+		$f->attr('name', 'hc_not_consuming'); 
+		$f->addOption(0, $yes);
+		$f->addOption(1, $no);
+		$f->attr('value', $value); 
+		$f->label = $this->_('Replace surrounding HTML tag?') . ' [' . ($value ? $no : $yes) . ']';
+		$f->description = $this->_('Should the output of this Hanna Code replace the immediate surrounding HTML tag if it is the only thing in the tag? If your Hanna Code outputs block-level HTML (like <ul> or <p> tags), this should probably be yes.'); 
+		$f->collapsed = Inputfield::collapsedYes; 
+		$form->add($f);
 		
 		if($id) {
 			$f = $this->modules->get('InputfieldCheckbox'); 
@@ -213,6 +240,11 @@ class ProcessHannaCode extends Process {
 		$name = $form->get('hc_name')->value; 
 		$type = (int) $form->get('hc_type')->value; 
 		$code = $form->get('hc_code')->value; 
+		$notc = $form->get('hc_not_consuming')->value; 	
+
+		if($notc) {
+			$type = $type | TextformatterHannaCode::TYPE_NOT_CONSUMING; 
+		}
 
 		if(empty($name)) {
 			$form->get('hc_name')->error('Name is required'); 

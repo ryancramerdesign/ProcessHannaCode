@@ -20,11 +20,11 @@ should be used around the attribute value when the value contains whitespace or 
 
 ## How to install
 
-1. Place the module files in /site/modules/ProcessHannaCode/
+1. Place the module files in /site/modules/TextformatterHannaCode/
 2. In your admin, click Modules > Check for new modules
-3. Click "install" for **TextformatterHannaCode** 
+3. Click "install" for **TextformatterHannaCode** (Hanna Code Text Formatter)
 4. Now to go Setup > Fields and locate the Textarea field(s) that you want to use Hanna codes with ("body" for instance).
-5. When editing the field, click the "details" tab, and select "Hanna Code" as the Textformatter. Save.
+5. When editing the field, click the "details" tab, and select "Hanna Code Text Formatter" as the Textformatter. Save.
 6. Now go to Setup > Hanna Code and start defining your Hanna Codes! You may want to use one of the examples from this document to get started.
 
 ## Tag format

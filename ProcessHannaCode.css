@@ -2,3 +2,10 @@
 #hc_code {
 	font-family: "Monaco", "Courier New", "Courier", monospace;
 }
+
+div.HannaCodeUsageNote {
+	width: 46%; 
+	padding-right: 3%; 
+	padding-left: 1%; 
+	float: left; 
+}

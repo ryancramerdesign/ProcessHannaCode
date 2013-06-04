@@ -17,8 +17,8 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 
 	public static function getModuleInfo() {
 		return array(
-			'title' => __('Hanna Code', __FILE__), 
-			'version' => 1, 
+			'title' => __('Hanna Code Text Formatter', __FILE__), 
+			'version' => 2, 
 			'summary' => __('Easily insert any complex HTML, Javascript or PHP output in your ProcessWire content by creating your own Hanna code tags.', __FILE__),
 			'installs' => 'ProcessHannaCode'
 			); 
@@ -31,6 +31,12 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	const TYPE_HTML = 0;
 	const TYPE_JS = 1; 
 	const TYPE_PHP = 2; 
+
+	/**
+	 * Flag that indicates Hanna code should not consume surrounding <p> tags
+	 *
+	 */
+	const TYPE_NOT_CONSUMING = 4; 
 
 	/**
 	 * Defaults for configuration
@@ -83,16 +89,19 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 		if(strpos($value, $openTag) === false) return;
 		if(strpos($value, $closeTag) === false) return;
 
-		$regx =	'|((?:<p>[\s\r\n]*)?)' . 
-			preg_quote($openTag, '|') . 
-			'(.+?)' . 
-			preg_quote($closeTag, '|') . 
-			'((?:[\s\r\n]*</p>)?)|';
+		$regx =	'!' . 
+			'(?:<([a-zA-Z]+)' .		// 1=optional HTML open tag 
+			'[^>]*>[\s\r\n]*)?' . 		// HTML open tag attributes and whitespace, if present	
+			preg_quote($openTag, '!') . 	// Hanna Code open tag	
+			'(.+?)' . 			// 2=tag contents
+			preg_quote($closeTag, '!') . 	// Hanna Code close tag
+			'(?:[\s\r\n]*</(\1)>)?' . 	// 3=optional close HTML tag
+			'!';	
 
 		if(!preg_match_all($regx, $value, $matches)) return;
 
 		foreach($matches[2] as $key => $expression) {
-
+			
 			if(strpos($expression, '=')) {
 				// expression with attrs
 				$attrs = $this->getAttributes($expression); 
@@ -105,10 +114,18 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 			$name = wire('sanitizer')->name($attrs['name']); 
 			unset($attrs['name']);
 
-			$replacement = $this->getReplacement($name, $attrs); 
+			$consume = true; 
+			$replacement = $this->getReplacement($name, $attrs, $consume); 
 			if($replacement === false) continue; 
 
-			$value = str_replace($matches[0][$key], $replacement, $value); 
+			$openHTML = $matches[1][$key]; 
+			$closeHTML = $matches[3][$key]; 
+
+			if($consume && $openHTML == $closeHTML) {
+				$value = str_replace($matches[0][$key], $replacement, $value); 
+			} else {
+				$value = str_replace("$openTag$expression$closeTag", $replacement, $value); 
+			}
 		}
 
 	}
@@ -173,10 +190,11 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	 *
 	 * @param string $name
 	 * @param array $attrs
+	 * @param bool $consume Whether it should consume surrounding tags or not
 	 * @return string
 	 *
 	 */
-	protected function getReplacement($name, array $attrs) {
+	protected function getReplacement($name, array $attrs, &$consume) {
 
 		if($this->database) {
 
@@ -204,9 +222,14 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 
 		unset($attrs['name']);
 
-		if($type == self::TYPE_JS) return $this->getJS($name, $code, $attrs); 
-			else if($type == self::TYPE_PHP) return $this->getPHP($name, $code, $attrs); 
-			else return $code; 
+		if($type & self::TYPE_JS) $value = $this->getJS($name, $code, $attrs); 
+			else if($type & self::TYPE_PHP) $value = $this->getPHP($name, $code, $attrs); 
+			else $value = $code; 
+
+		// Populate whether or not the surrounding tags should be consumed
+		$consume = !($type & self::TYPE_NOT_CONSUMING);
+
+		return $value; 
 	}
 
 	/**
