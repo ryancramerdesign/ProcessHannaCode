@@ -21,7 +21,7 @@ class ProcessHannaCode extends Process {
 		return array(
 			'title' => 'Hanna Code', 
 			'summary' => 'Easily insert any complex HTML, Javascript or PHP output in your ProcessWire content by creating your own Hanna code tags.',
-			'version' => 2, 
+			'version' => 3, 
 			'permission' => 'hanna-code', 
 			'requires' => 'TextformatterHannaCode'
 			); 
@@ -133,7 +133,7 @@ class ProcessHannaCode extends Process {
 		$f = $this->modules->get('InputfieldRadios'); 
 		$f->attr('name', 'hc_type'); 
 		foreach($this->typeLabels as $key => $label) $f->addOption($key, $label); 
-		$f->attr('value', $type); 
+		$f->attr('value', $type && TextformatterHannaCode::TYPE_NOT_CONSUMING ? $type - TextformatterHannaCode::TYPE_NOT_CONSUMING : $type); 
 		$f->label = $this->_('Type'); 
 		$f->optionColumns = 1; 
 		$form->add($f); 
