@@ -202,7 +202,7 @@ FzICRhbmNob3IgPT4gJHRleHQpIHtcclxuICAgIGVjaG8gXCI8bGk+PGEgaHJlZj0nJHBhZ2UtPnVybC
 cIjtcclxufSBlbHNlIHtcclxuICBlY2hvICcnO1xyXG59In0=/!HannaCode
 ```
 
-**Usage Examples:*
+**Usage Examples:**
 
 `[[jumplinks]]` Locates all h2 and h3 headlines, turns them into anchors, and generates a table of contents. This is the default behavior with no attributes.
 
