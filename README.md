@@ -144,6 +144,7 @@ $page->body = $hanna->render($page->body);
 
 9. These code snippets are written to `/site/assets/cache/HannaCode/[tag-name].php` and directly executed rather than eval(d).
 
+
 ### PHP Properties
 
 - `$attr`	  
@@ -163,21 +164,10 @@ The larger text where the Hanna code lives. This property may also be set.
 
 Please note that "name" is a reserved word and may not be used as an attribute name.
 
-## Javascript Usage Notes
-
-1. It is not necessary to include <script> tags in your code unless you want to. 
-   They will be automatically inserted when not already present.
-
-2. If attributes are specified in the tag, they will appear as directly accessible variables to your Javascript code. 
-   For instance, in the tag [[hello_world first_name=Karena]], your code will have a first_name variable populated with 'Karena'.
-
-3. All attributes are also populated to an attr object of attr.key=value (i.e. attr.first_name == 'Karena'), in case you find this syntax preferable.
-
-4. Note that name is a reserved word and may not be used as an attribute name.
 
 ## Javascript Usage Notes
 
-1. It is not necessary to include <script> tags in your code unless you want to. They will be automatically inserted when not already present.
+1. It is not necessary to include script tags in your code unless you want to. They will be automatically inserted when not already present.
 
 2. If attributes are specified in the tag (or in the attributes section of this page), they will appear as locally scoped variables to your Javascript code. 
    For instance, in the tag [[hello_world first_name=Karena]], your code will have a first_name variable populated with 'Karena'.
