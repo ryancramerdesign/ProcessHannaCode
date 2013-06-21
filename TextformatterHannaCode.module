@@ -18,7 +18,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	public static function getModuleInfo() {
 		return array(
 			'title' => __('Hanna Code Text Formatter', __FILE__), 
-			'version' => 4, 
+			'version' => 5, 
 			'summary' => __('Easily insert any complex HTML, Javascript or PHP output in your ProcessWire content by creating your own Hanna code tags.', __FILE__),
 			'installs' => 'ProcessHannaCode'
 			); 
@@ -59,6 +59,30 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	protected $closeTag = '';
 
 	/**
+	 * Page object passed to the Textformatter's formatValue() function
+	 *
+	 */
+	protected $page;
+
+	/**
+	 * Field object passed to the Textformatter's formatValue() function
+	 *
+	 */
+	protected $field;
+
+	/**
+	 * $value passed to the Textformatter's formatValue() function
+	 *
+	 */
+	protected $value; 
+
+	/**
+	 * $name of the current Hanna code
+	 *
+	 */
+	protected $name; 
+
+	/**
 	 * Initialize defaults
 	 *
 	 */
@@ -73,7 +97,25 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	 *
 	 */
 	public function __set($key, $value) {
-		if($key == 'openTag' || $key == 'closeTag') $this->$key = $value; 
+		// so that Hanna code can modify the original full value
+		if($key == 'value') {
+			$this->value = $value; 
+		} else if($key == 'openTag' || $key == 'closeTag') {
+			$this->$key = $value; 
+		} else {
+			parent::set($key, $value);
+		}
+	}
+
+	/**
+	 * Values that can be retrieved from the $hanna variable passed to all Hanna codes
+	 *
+	 */
+	public function __get($key) {
+		if($key == 'field') return $this->field;
+			else if($key == 'value') return $this->value; 
+			else if($key == 'name') return $this->name; 
+		return parent::__get($key); 
 	}
 
 	/**
@@ -84,6 +126,9 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	
 		$openTag = $this->openTag; 
 		$closeTag = $this->closeTag; 
+		$this->page = $page;
+		$this->field = $field; 
+		$this->value = $value; 
 
 		// exit early when possible
 		if(strpos($value, $openTag) === false) return;
@@ -112,6 +157,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 			}
 
 			$name = wire('sanitizer')->name($attrs['name']); 
+			$this->name = $name; 
 			unset($attrs['name']);
 
 			$consume = true; 
@@ -122,12 +168,16 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 			$closeHTML = $matches[3][$key]; 
 
 			if($consume && $openHTML == $closeHTML) {
-				$value = str_replace($matches[0][$key], $replacement, $value); 
+				$this->value = str_replace($matches[0][$key], $replacement, $this->value); 
 			} else {
-				$value = str_replace("$openTag$expression$closeTag", $replacement, $value); 
+				$this->value = str_replace("$openTag$expression$closeTag", $replacement, $this->value); 
 			}
 		}
 
+		$value = $this->value; 	
+		$this->value = '';
+		$this->page = null;
+		$this->field = null;
 	}
 
 	/**
@@ -222,6 +272,12 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 
 		unset($attrs['name']);
 
+		// set default attributes, that haven't already been set by user
+		$defaultAttrs = $this->extractDefaultCodeAttrs($code); 
+		foreach($defaultAttrs as $key => $value) {
+			if(!array_key_exists($key, $attrs)) $attrs[$key] = $value; 
+		}
+
 		if($type & self::TYPE_JS) $value = $this->getJS($name, $code, $attrs); 
 			else if($type & self::TYPE_PHP) $value = $this->getPHP($name, $code, $attrs); 
 			else $value = $code; 
@@ -310,21 +366,69 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 		}
 
 		$t = new TemplateFile($file); 
+
+
 		// populate user specified attrs
 		foreach($attrs as $key => $value) $t->set($key, $value); 
+
 		// also populate them all into an $attrs array, if preferred
 		$t->set('attr', $attrs); 
+
 		// populate API variables
-		foreach(wire() as $key => $value) $t->set($key, $value); 
+		foreach(wire() as $key => $value) {
+			if($key != 'page') $t->set($key, $value); 
+		}
+
+		// populate $page and $hanna variables that are context specific
+		// note $page may be different from wire('page')
+		$t->set('page', $this->page);
+		$t->set('hanna', $this); 
 
 		return $t->render();
 	}
+
+	/**
+	 * Extract default attributes stored in the code block
+	 *
+	 * Extracts hc_attr\nkey=value\nkey2=value2\nhc_attr to array('key' => $value, 'key2' => 'value2'); 
+	 * and removes the section from $code
+	 *
+	 * @param string $code
+	 * @return array
+	 *
+	 */
+	public function extractDefaultCodeAttrs(&$code) {
+
+		$pos = strpos($code, 'hc_attr*/'); 
+		if($pos === false) return array();
+
+		$attrStr = trim(substr($code, 9, $pos-9)); 
+		$code = trim(substr($code, $pos+10)); 
+		$lines = explode("\n", $attrStr); 
+		$attrs = array();
+
+		foreach($lines as $line) {
+			$pos = strpos($line, '='); 
+			$name = substr($line, 0, $pos); 
+			$value = substr($line, $pos); 
+			$name = trim($name, "\r\n="); 
+			// filter out API variable names and reserved words
+			if(empty($name)) continue; 
+			if(!is_null(wire($name)) || in_array($name, array('name', 'hanna', 'attr'))) $name = "_$name";
+			$value = trim($value, "\r\n=\""); 
+			$attrs[$name] = $value; 
+		}
+
+		return $attrs;
+	}
+
 
 	/**
 	 * Install this module
 	 *
 	 */
 	public function ___install() {
+
 		$sql = 	"CREATE TABLE hanna_code (" . 
 			"`id` int unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY, " . 
 			"`name` varchar(128) NOT NULL, " . 

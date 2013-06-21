@@ -1,6 +1,13 @@
 
-#hc_code {
+#hc_code,
+#hc_attr,
+#hc_export,
+#hc_import {
 	font-family: "Monaco", "Courier New", "Courier", monospace;
+}
+
+#button_add {
+	float: left;
 }
 
 div.HannaCodeUsageNote {
@@ -9,3 +16,22 @@ div.HannaCodeUsageNote {
 	padding-left: 1%; 
 	float: left; 
 }
+
+div.HannaCodeUsageNote strong {
+	font-weight: bold; 
+}
+
+div.HannaCodeUsageNote table td {
+	padding: 0.25em 1em 0.25em 0; 
+	border-bottom: 1px solid #eee; 
+}
+
+div.HannaCodeUsageNote table tr td:first-child {
+	white-space: nowrap;
+	vertical-align: top; 
+}
+
+code {
+	background: #ffffdd; 
+}
+

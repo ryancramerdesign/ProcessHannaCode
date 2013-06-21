@@ -21,7 +21,7 @@ class ProcessHannaCode extends Process {
 		return array(
 			'title' => 'Hanna Code', 
 			'summary' => 'Easily insert any complex HTML, Javascript or PHP output in your ProcessWire content by creating your own Hanna code tags.',
-			'version' => 4, 
+			'version' => 5, 
 			'permission' => 'hanna-code', 
 			'requires' => 'TextformatterHannaCode'
 			); 
@@ -32,6 +32,12 @@ class ProcessHannaCode extends Process {
 	 *
 	 */
 	const pageName = 'hanna-code';
+
+	/**
+	 * Instance of TextformatterHannaCode
+	 *
+	 */
+	protected $hanna = null;
 
 	/**
 	 * This is an optional initialization function called before any execute functions.
@@ -48,7 +54,7 @@ class ProcessHannaCode extends Process {
 			1 => $this->_('Javascript'),
 			2 => $this->_('PHP')
 			));
-		
+		$this->hanna = $this->modules->get('TextformatterHannaCode'); 
 	}
 
 	/**
@@ -69,15 +75,19 @@ class ProcessHannaCode extends Process {
 
 		$typeLabels = $this->typeLabels;
 
-		$result = $this->db->query("SELECT id, name, type, modified, accessed FROM hanna_code ORDER BY name"); 
+		$sort = 'name';
+		if($this->input->get->sort == '-modified') $sort = 'modified DESC';
+		$result = $this->db->query("SELECT id, name, type, modified, accessed, code FROM hanna_code ORDER BY $sort"); 
 
 		while($row = $result->fetch_row()) {
-			list($id, $name, $type, $modified, $accessed) = $row; 
-			if(preg_match('/[a-zA-Z0-9]$/', $this->openTag)) {
-				$tag = $this->openTag . " name=\"$name\" " . $this->closeTag;
-			} else {
-				$tag = $this->openTag . $name . $this->closeTag; 
+			list($id, $name, $type, $modified, $accessed, $code) = $row; 
+			$attrs = '';
+			foreach($this->hanna->extractDefaultCodeAttrs($code) as $attrName => $attrValue) {
+				$attrs .= " $attrName=\"$attrValue\"";
 			}
+
+			if(preg_match('/[a-zA-Z0-9]$/', $this->openTag)) $name = " name=\"$name\"";
+			$tag = $this->openTag . $name . $attrs . $this->closeTag; 
 
 			if($type & TextformatterHannaCode::TYPE_NOT_CONSUMING) $type -= TextformatterHannaCode::TYPE_NOT_CONSUMING; 
 
@@ -92,9 +102,70 @@ class ProcessHannaCode extends Process {
 
 		if(!$result->num_rows) $this->message($this->_('No Hanna Codes yet, go ahead and add one!')); 
 
-		$table->action(array($this->_('Add New') => 'edit/')); 
-		return $table->render(); 
+		$button1 = $this->modules->get('InputfieldButton'); 
+		$button1->attr('id', 'button_add'); 
+		$button1->attr('value', $this->_('Add New')); 
+		$button1->attr('href', './edit/'); 
+		$button1->class .= ' head_button_clone';
+
+		$button2 = $this->modules->get('InputfieldButton'); 
+		$button2->attr('id', 'button_import'); 
+		$button2->attr('value', $this->_('Import')); 
+		$button2->attr('href', './import/'); 
+		$button2->class .= ' ui-priority-secondary'; 
+
+		return $table->render() . $button1->render() . $button2->render();
 	}	
+
+	public function ___executeImport() {
+
+		$form = $this->modules->get('InputfieldForm'); 
+
+		$f = $this->modules->get('InputfieldTextarea');
+		$f->attr('id+name', 'hc_import'); 
+		$f->label = $this->_("Paste in Import Data"); 
+		$form->add($f); 
+
+		$f = $this->modules->get('InputfieldSubmit');
+		$f->attr('name', 'submit_import'); 
+		$form->add($f); 
+
+		Wire::setFuel('processHeadline', $this->_("Import Hanna Code")); 
+
+		if(!$this->input->post->submit_import) return $form->render();
+
+		$form->processInput($this->input->post); 
+		$data = $form->get('hc_import')->value; 
+		if(!preg_match('{!HannaCode:([^:]+):(.*?)/!HannaCode}s', $data, $matches)) throw new WireException("Unrecognized Hanna Code format"); 
+		$name = $matches[1]; 
+		$data = $matches[2]; 
+		$data = base64_decode($data); 
+		if($data === false) throw new WireException("Failed to base64 decode import data"); 
+		$data = json_decode($data, true); 
+		if($data === false) throw new WireException("Failed to json decode import data"); 
+		if(empty($data['name']) || empty($data['code'])) throw new WireException("Import data does not contain all required fields"); 
+
+		$result = $this->db->query("SELECT COUNT(*) FROM hanna_code WHERE name='" . $this->db->escape_string($name) . "'"); 
+		list($n) = $result->fetch_row(); 
+		if($n > 0) {
+			$this->error($this->_('Hanna Code with that name already exists')); 
+			return $this->session->redirect('../'); 
+		}
+
+		$sql = 	"INSERT INTO hanna_code SET " . 
+			"`name`='" . $this->db->escape_string($name) . "', " . 
+			"`type`=" . ((int) $data['type']) . ", " . 
+			"`code`='" . $this->db->escape_string($data['code']) . "', " . 
+			"`modified`=" . time();
+
+		if($this->db->query($sql)) {
+			$this->message($this->_('Imported Hanna Code:') . " " . wire('sanitizer')->entities($name)); 
+			$id = $this->db->insert_id; 
+			$this->session->redirect("../edit/?id=$id"); 
+		} else {
+			throw new WireException("Error importing (database insert)"); 
+		}
+	}
 
 	/**
 	 * Called when the URL is this module's page URL + "/something/"
@@ -112,11 +183,19 @@ class ProcessHannaCode extends Process {
 			$result = $this->db->query("SELECT name, type, code FROM hanna_code WHERE id=$id"); 
 			if(!$result->num_rows) throw new WireException("Unknown ID"); 
 			list($name, $type, $code) = $result->fetch_row();
+			$exportData = array('name' => $name, 'type' => $type, 'code' => $code); 
+			$attr = '';
+			foreach($this->hanna->extractDefaultCodeAttrs($code) as $attrName => $attrValue) {
+				$attr .= strlen($attrValue) ? "$attrName=$attrValue\n" : "$attrName\n";
+			}
+
 			Wire::setFuel('processHeadline', $this->_("Edit Hanna Code:") . " $name");
 		} else {
 			$name = '';
 			$type = 0;
 			$code = '';
+			$attr = '';
+			$exportData = null;
 			Wire::setFuel('processHeadline', $this->_("Adding New Hanna Code")); 
 		}
 
@@ -146,27 +225,42 @@ class ProcessHannaCode extends Process {
 			<div class='HannaCodeUsageNote'>
 				<h2>PHP Usage Notes</h2>	
 				<ol>
-				<li>Your code should 'echo' or 'print' the value you want to appear as the replacement for the tag.</li>
+				<li>Your code should <code>echo</code> or <code>print</code> the value you want to appear as the replacement for the tag.</li>
 				<li>It is not necessary to begin or close your statement with open/close PHP tags. Though you may use them when/if necessary.</li>
-				<li>If attributes are specified in the tag, they will appear as directly accessible variables to your PHP code.
-				For instance, in the tag <code>[[hello_world first_name=Karena]]</code>, your code will have a <code>\$first_name</code> variable populated with 'Karena'.
-				To check for the presence of these attributes, use <code>isset(\$first_name);</code> for example.</li>
-				<li>All attributes are also populated to an <code>\$attr</code> array of name=value (i.e. <code>\$attr['first_name'] == 'Karena'</code>), in case you find this syntax preferable.</li>
-				<li>Your code is executed the same way as a ProcessWire template file and all API variables are locally scoped. Meaning, you can call upon <code>\$page</code>, <code>\$pages</code>, etc. directly.</li>
+				<li>Your code is executed the same way as a ProcessWire template file and all API variables are locally scoped. 
+				Meaning, you can call upon <code>\$page</code>, <code>\$pages</code>, or any other API variables. directly.
+				See also the PHP Properties section to the right.</li>
+				<li>If attributes are specified in the tag (or in the Attributes field on this page), they will appear as locally scoped variables to your PHP code.
+				For instance, in the tag <code>[[hello_world first_name=Karena]]</code>, your code will have a <code>\$first_name</code> variable populated with 'Karena'.</li>
+				<li>If using attributes, it is optional though recommended that you define defaults in the Attributes field on this screen (even if blank is the default value).</li>
+				<li>All attributes are also populated to an <code>\$attr</code> array of [key=value]. For example: <code>\$attr['first_name'] == 'Karena'</code>, in case you find this syntax preferable, or necessary.</li>
+				<li>If you use an attribute name that is the same as an API variable name (example: <code>\$page</code>) then the API variable overrides the attribute name. In that case, the attribute value will only be accessible 
+				through <code>\$attr</code> (example: <code>\$attr['page']</code>).</li> 
+				<li>Your code receives an object named <code>\$hanna</code>. This can be used for getting additional properties, or modifying the larger text value if necessary. See details in the PHP Properties section.</li>
+				<li>The <code>\$page</code> API variable available to your Hanna code represents the page where the Hanna code exists. It is possible for this to be different from <code>wire('page')</code>, which represents the page that originated the request.</li>
 				<li>These code snippets are written to <code>/site/assets/cache/HannaCode/[tag-name].php</code> and directly executed rather than eval'd.</li>
 				</ol>
 			</div>
 
 			<div class='HannaCodeUsageNote'>
+				<h2>PHP Properties</h2>
+				<table class='AdminDataTable'>
+				<tr><td><code>\$attr</code></td></td><td>An array of [key=value] attributes passed to your Hanna code.</td></tr>
+				<tr><td><code>\$page</code></td></td><td>The page where the Hanna code exists. </td></tr>
+				<tr><td><code>\$hanna->name</code></td></td><td>The name (string) of the current Hanna code.</td></tr>
+				<tr><td><code>\$hanna->field</code></td></td><td>The Field object representing the text.</td></tr>
+				<tr><td><code>\$hanna->value</code></td></td><td>The larger text where the Hanna code lives. This property may also be set.</td></tr>
+				</table>
+				<p><strong>Please note that \"name\" is a reserved word and may not be used as an attribute name.</strong></p>
 				<h2>Javascript Usage Notes</h2>	
 				<ol>
 				<li>It is not necessary to include <code>&lt;script&gt;</code> tags in your code unless you want to. They will be automatically inserted when not already present.</li>
-				<li>If attributes are specified in the tag, they will appear as directly accessible variables to your Javascript code.
+				<li>If attributes are specified in the tag (or in the attributes section of this page), they will appear as locally scoped variables to your Javascript code.
 				For instance, in the tag <code>[[hello_world first_name=Karena]]</code>, your code will have a first_name variable populated with 'Karena'.</li>
-				<li>All attributes are also populated to an <code>attr</code> object of <code>attr.name=value</code> (i.e. <code>attr.first_name == 'Karena'</code>), in case you find this syntax preferable.</li>
+				<li>All attributes are also populated to an <code>attr</code> object of <code>attr.key=value</code> (i.e. <code>attr.first_name == 'Karena'</code>), in case you find this syntax preferable.</li>
+				<li>If using attributes, it is recommended that you define defaults in the Attributes field on this screen (even if blank is the default value).</li>
+				<li>Note that <code>name</code> is a reserved word and may not be used as an attribute name.</li>
 				</ol>
-				<h2>Please Note</h3>
-				<p>The keywords <code>name</code>, <code>attr</code>, and all ProcessWire API variable names are reserved words and should not be used for attribute names.</p>
 			</div>
 		</div>
 
@@ -181,6 +275,16 @@ class ProcessHannaCode extends Process {
 		$f->attr('value', $code); 
 		$f->label = $this->_('Code'); 
 		$f->attr('rows', 20); 
+		$f->required = true; 
+		$form->add($f); 
+
+		$f = $this->modules->get('InputfieldTextarea'); 
+		$f->attr('id+name', 'hc_attr'); 
+		$f->attr('value', $attr); 
+		$f->label = $this->_('Attributes'); 
+		$f->description = $this->_('Optional but recommended if using attributes with PHP or Javascript: Enter one attribute name per line that your Hanna code uses. To specify a default value, enter it as "attr=value". If no default specified, value defaults to a blank string.');
+		$f->notes = $this->_('Examples:') . "\nsome_attribute\nattribute_with_default=The Default Value";
+		$f->collapsed = Inputfield::collapsedBlank;
 		$form->add($f); 
 
 		$yes = $this->_('Yes');
@@ -195,7 +299,18 @@ class ProcessHannaCode extends Process {
 		$f->description = $this->_('Should the output of this Hanna Code replace the immediate surrounding HTML tag if it is the only thing in the tag? If your Hanna Code outputs block-level HTML (like <ul> or <p> tags), this should probably be yes.'); 
 		$f->collapsed = Inputfield::collapsedYes; 
 		$form->add($f);
-		
+
+		if($exportData) {
+			$f = $this->modules->get('InputfieldTextarea');
+			$f->attr('id+name', 'hc_export'); 
+			$f->attr('value', "!HannaCode:$name:" . base64_encode(json_encode($exportData)) . "/!HannaCode"); 
+			$f->label = $this->_('Export'); 
+			$f->description = $this->_('To export this Hanna code and import somewhere else, copy the contents of this field and paste into the import box somewhere else.'); 
+			$f->notes = $this->_('If you have made any changes above, make sure to save before copying the export data here.'); 
+			$f->collapsed = Inputfield::collapsedYes; 
+			$form->add($f); 
+		}
+
 		if($id) {
 			$f = $this->modules->get('InputfieldCheckbox'); 
 			$f->attr('name', 'hc_delete'); 
@@ -211,7 +326,9 @@ class ProcessHannaCode extends Process {
 		$form->add($f); 
 
 		$f = $this->modules->get('InputfieldSubmit'); 
+		$f->class .= ' head_button_clone';
 		$f->attr('name', 'hc_save'); 
+		$f->attr('value', $this->_('Save')); 
 		$form->add($f); 
 
 		if($this->input->post->hc_save) $this->save($form); 
@@ -241,6 +358,32 @@ class ProcessHannaCode extends Process {
 		$type = (int) $form->get('hc_type')->value; 
 		$code = $form->get('hc_code')->value; 
 		$notc = $form->get('hc_not_consuming')->value; 	
+		$attr = $form->get('hc_attr')->value;
+
+		if($attr) {
+			// bundle default attr values as PHP code
+			$out = '';
+			foreach(explode("\n", $attr) as $line) {
+				$line = trim($line);
+				if(strpos($line, '=')) {
+					list($attrName, $attrValue) = explode('=', $line);	
+					$attrName = $this->sanitizer->fieldName(trim($attrName));
+					$attrValue = '"' . str_replace('"', '\"', $attrValue) . '"';
+					$attrValue = str_replace(array('/*', '*/', 'hc_attr'), '', $attrValue); 
+				} else {
+					$attrName = $line; 
+					$attrValue = '""';
+				}
+				if(empty($attrName)) continue; 
+				if(wire($attrName) || in_array($attrName, array('name', 'hanna', 'attr'))) {
+					$this->error($this->_('Disallowed attribute name:') . " $attrName");
+					$attrName = '_' . $attrName; 
+				}
+				$out .= "$attrName=$attrValue\n";
+			}
+			if($out) $code = "/*hc_attr\n{$out}hc_attr*/\n" . $code; 
+			unset($out, $attr);
+		}
 
 		if($notc) {
 			$type = $type | TextformatterHannaCode::TYPE_NOT_CONSUMING; 
@@ -268,7 +411,7 @@ class ProcessHannaCode extends Process {
 
 		if($result) {
 			$this->message($this->_("Saved Hanna Code")); 				
-			$this->session->redirect("../"); 
+			$this->session->redirect("../?sort=-modified"); 
 		} else {
 			$this->error("Error saving"); 
 			return false;
