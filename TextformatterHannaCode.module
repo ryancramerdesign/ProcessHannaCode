@@ -18,7 +18,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	public static function getModuleInfo() {
 		return array(
 			'title' => __('Hanna Code Text Formatter', __FILE__), 
-			'version' => 5, 
+			'version' => 6, 
 			'summary' => __('Easily insert any complex HTML, Javascript or PHP output in your ProcessWire content by creating your own Hanna code tags.', __FILE__),
 			'installs' => 'ProcessHannaCode'
 			); 
@@ -319,8 +319,8 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 		} else if(strlen($vars)) {
 			// script tag is already present
 			// if we have vars to insert, put them after the opening script, but before the code
-			preg_match('/\s*(<script[^>]*)(.*)/si', $code, $matches); 
-			$code = $matches[1] . $vars . $matches[2]; 
+			preg_match('/\s*(<script[^>]*>)(.*)/si', $code, $matches); 
+			$js = $matches[1] . $vars . $matches[2]; 
 		} else {
 			// script tag already present and no vars to insert
 			$js = $code; 
