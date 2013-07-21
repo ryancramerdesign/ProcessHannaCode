@@ -18,7 +18,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	public static function getModuleInfo() {
 		return array(
 			'title' => __('Hanna Code Text Formatter', __FILE__), 
-			'version' => 7, 
+			'version' => 8, 
 			'summary' => __('Easily insert any complex HTML, Javascript or PHP output in your ProcessWire content by creating your own Hanna code tags.', __FILE__),
 			'installs' => 'ProcessHannaCode'
 			); 
@@ -433,7 +433,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 			"`id` int unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY, " . 
 			"`name` varchar(128) NOT NULL, " . 
 			"`type` tinyint NOT NULL DEFAULT 0, " . 
-			"`code` text NOT NULL default '', " . 
+			"`code` text, " . 
 			"`modified` int unsigned NOT NULL default 0, " . 
 			"`accessed` int unsigned NOT NULL default 0, " . 
 			"UNIQUE `name`(`name`)"  . 
