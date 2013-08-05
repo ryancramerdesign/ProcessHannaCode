@@ -548,7 +548,6 @@ _OUT;
 		$f->attr('name', 'aceTheme');
 		foreach($themes as $theme) $f->addOption($theme); 
 		$f->attr('value', !empty($data['aceTheme']) ? $data['aceTheme'] : self::defaultAceTheme); 
-		$f->attr('value', self::defaultAceTheme); 
 		$f->notes = __('See the [Ace Editor demo](http://ace.c9.io/build/kitchen-sink.html) to preview what the different themes look like.'); 
 		$form->add($f); 
 
