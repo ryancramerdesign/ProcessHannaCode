@@ -21,7 +21,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		return array(
 			'title' => 'Hanna Code', 
 			'summary' => 'Easily insert any complex HTML, Javascript or PHP output in your ProcessWire content by creating your own Hanna code tags.',
-			'version' => 11, 
+			'version' => 12, 
 			'permission' => 'hanna-code', 
 			'requires' => 'TextformatterHannaCode'
 			); 
@@ -318,7 +318,6 @@ _OUT;
 		$f->attr('rows', 20); 
 		$f->attr('data-theme', $this->aceTheme); 
 		$f->attr('data-height', $this->aceHeight); 
-		$f->required = true; 
 		$tab->add($f); 
 
 		$f = $this->modules->get('InputfieldMarkup'); 
@@ -456,10 +455,7 @@ _OUT;
 			return false;
 		}
 
-		if(empty($code)) {
-			$form->get('hc_code')->error('Code is required'); 
-			return false;
-		}
+		if(empty($code)) $code = '';
 
 		$sql = 	($id ? "UPDATE " : "INSERT INTO ") . "hanna_code " . 
 			"SET " . 
@@ -472,6 +468,7 @@ _OUT;
 		$result = $this->db->query($sql); 
 
 		if($result) {
+			if(!$id) $id = $this->db->insert_id; 
 			$this->message($this->_("Saved Hanna Code")); 				
 			if($exitAfterSave) $this->session->redirect("../?sort=-modified"); 
 				else if($testAfterSave) $this->session->redirect("./?id=$id&test=1"); 
