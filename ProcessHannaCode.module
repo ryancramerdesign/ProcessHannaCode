@@ -11,7 +11,7 @@
  *
  */
 
-class ProcessHannaCode extends Process {
+class ProcessHannaCode extends Process implements ConfigurableModule {
 
 	/**
 	 * Return information about this module (required)
@@ -21,7 +21,7 @@ class ProcessHannaCode extends Process {
 		return array(
 			'title' => 'Hanna Code', 
 			'summary' => 'Easily insert any complex HTML, Javascript or PHP output in your ProcessWire content by creating your own Hanna code tags.',
-			'version' => 8, 
+			'version' => 10, 
 			'permission' => 'hanna-code', 
 			'requires' => 'TextformatterHannaCode'
 			); 
@@ -34,10 +34,27 @@ class ProcessHannaCode extends Process {
 	const pageName = 'hanna-code';
 
 	/**
+	 * Default theme for the Ace Editor
+	 *
+	 */
+	const defaultAceTheme = 'github';
+
+	/**
+	 * Default height (in pixels) for the Ace Editor
+	 *
+	 */
+	const defaultAceHeight = '400';
+
+	/**
 	 * Instance of TextformatterHannaCode
 	 *
 	 */
 	protected $hanna = null;
+
+	public function __construct() {
+		$this->set('aceTheme', self::defaultAceTheme); 
+		$this->set('aceHeight', self::defaultAceHeight); 
+	}
 
 	/**
 	 * This is an optional initialization function called before any execute functions.
@@ -173,7 +190,6 @@ class ProcessHannaCode extends Process {
 	 */
 	public function ___executeEdit() {
 
-		// set a new headline, replacing the one used by our page (optional)
 
 		// add a breadcrumb that returns to our main page 
 		$this->breadcrumbs->add(new Breadcrumb('../', $this->page->title)); 
@@ -219,62 +235,17 @@ class ProcessHannaCode extends Process {
 
 		$f = $this->modules->get('InputfieldMarkup'); 
 		$f->label = $this->_('PHP and Javascript Usage Notes'); 
-		$f->value = "
-
-		<div class='ui-helper-clearfix'>
-			<div class='HannaCodeUsageNote'>
-				<h2>PHP Usage Notes</h2>	
-				<ol>
-				<li>Your code should <code>echo</code> or <code>print</code> the value you want to appear as the replacement for the tag.</li>
-				<li>It is not necessary to begin or close your statement with open/close PHP tags. Though you may use them when/if necessary.</li>
-				<li>Your code is executed the same way as a ProcessWire template file and all API variables are locally scoped. 
-				Meaning, you can call upon <code>\$page</code>, <code>\$pages</code>, or any other API variables. directly.
-				See also the PHP Properties section to the right.</li>
-				<li>If attributes are specified in the tag (or in the Attributes field on this page), they will appear as locally scoped variables to your PHP code.
-				For instance, in the tag <code>[[hello_world first_name=Karena]]</code>, your code will have a <code>\$first_name</code> variable populated with 'Karena'.</li>
-				<li>If using attributes, it is optional though recommended that you define defaults in the Attributes field on this screen (even if blank is the default value).</li>
-				<li>All attributes are also populated to an <code>\$attr</code> array of [key=value]. For example: <code>\$attr['first_name'] == 'Karena'</code>, in case you find this syntax preferable, or necessary.</li>
-				<li>If you use an attribute name that is the same as an API variable name (example: <code>\$page</code>) then the API variable overrides the attribute name. In that case, the attribute value will only be accessible 
-				through <code>\$attr</code> (example: <code>\$attr['page']</code>).</li> 
-				<li>Your code receives an object named <code>\$hanna</code>. This can be used for getting additional properties, or modifying the larger text value if necessary. See details in the PHP Properties section.</li>
-				<li>The <code>\$page</code> API variable available to your Hanna code represents the page where the Hanna code exists. It is possible for this to be different from <code>wire('page')</code>, which represents the page that originated the request.</li>
-				<li>These code snippets are written to <code>/site/assets/cache/HannaCode/[tag-name].php</code> and directly executed rather than eval'd.</li>
-				</ol>
-			</div>
-
-			<div class='HannaCodeUsageNote'>
-				<h2>PHP Properties</h2>
-				<table class='AdminDataTable'>
-				<tr><td><code>\$attr</code></td></td><td>An array of [key=value] attributes passed to your Hanna code.</td></tr>
-				<tr><td><code>\$page</code></td></td><td>The page where the Hanna code exists. </td></tr>
-				<tr><td><code>\$hanna->name</code></td></td><td>The name (string) of the current Hanna code.</td></tr>
-				<tr><td><code>\$hanna->field</code></td></td><td>The Field object representing the text.</td></tr>
-				<tr><td><code>\$hanna->value</code></td></td><td>The larger text where the Hanna code lives. This property may also be set.</td></tr>
-				</table>
-				<p><strong>Please note that \"name\" is a reserved word and may not be used as an attribute name.</strong></p>
-				<h2>Javascript Usage Notes</h2>	
-				<ol>
-				<li>It is not necessary to include <code>&lt;script&gt;</code> tags in your code unless you want to. They will be automatically inserted when not already present.</li>
-				<li>If attributes are specified in the tag (or in the attributes section of this page), they will appear as locally scoped variables to your Javascript code.
-				For instance, in the tag <code>[[hello_world first_name=Karena]]</code>, your code will have a first_name variable populated with 'Karena'.</li>
-				<li>All attributes are also populated to an <code>attr</code> object of <code>attr.key=value</code> (i.e. <code>attr.first_name == 'Karena'</code>), in case you find this syntax preferable.</li>
-				<li>If using attributes, it is recommended that you define defaults in the Attributes field on this screen (even if blank is the default value).</li>
-				<li>Note that <code>name</code> is a reserved word and may not be used as an attribute name.</li>
-				</ol>
-			</div>
-		</div>
-
-		";
-
+		$f->value = file_get_contents(dirname(__FILE__) . '/usage-notes.php'); 
 		$f->collapsed = Inputfield::collapsedYes; 
 		$form->add($f); 
-
 
 		$f = $this->modules->get('InputfieldTextarea'); 
 		$f->attr('id+name', 'hc_code'); 
 		$f->attr('value', $code); 
 		$f->label = $this->_('Code'); 
 		$f->attr('rows', 20); 
+		$f->attr('data-theme', $this->aceTheme); 
+		$f->attr('data-height', $this->aceHeight); 
 		$f->required = true; 
 		$form->add($f); 
 
@@ -327,13 +298,21 @@ class ProcessHannaCode extends Process {
 
 		$f = $this->modules->get('InputfieldSubmit'); 
 		$f->class .= ' head_button_clone';
-		$f->attr('name', 'hc_save'); 
+		$f->attr('id+name', 'hc_save'); 
 		$f->attr('value', $this->_('Save')); 
 		$form->add($f); 
 
-		if($this->input->post->hc_save) $this->save($form); 
+		$f = $this->modules->get('InputfieldSubmit'); 
+		$f->attr('id+name', 'hc_save_exit'); 
+		$f->class .= " ui-priority-secondary";
+		$f->attr('value', $this->_('Save & Exit')); 
+		$form->add($f); 
+
+		if($this->input->post->hc_save || $this->input->post->hc_save_exit) $this->save($form); 
+
+		$this->config->scripts->add($this->config->urls->ProcessHannaCode . "ace/src-min/ace.js"); 
 	
-		return $form->render();	
+		return $form->render();
 	}
 
 	/**
@@ -342,10 +321,9 @@ class ProcessHannaCode extends Process {
 	 */
 	protected function save($form) {
 
-		if(!$this->input->post->hc_save) return false;
-
 		$id = (int) $this->input->post->hc_id; 
 		$delete = (int) $this->input->post->hc_delete; 
+		$exitAfterSave = $this->input->post->hc_save_exit; 
 
 		if($delete && $delete === $id) {
 			$this->db->query("DELETE FROM hanna_code WHERE id=$delete LIMIT 1"); 	
@@ -411,7 +389,8 @@ class ProcessHannaCode extends Process {
 
 		if($result) {
 			$this->message($this->_("Saved Hanna Code")); 				
-			$this->session->redirect("../?sort=-modified"); 
+			if($exitAfterSave) $this->session->redirect("../?sort=-modified"); 
+				else $this->session->redirect("./?id=$id"); 
 		} else {
 			$this->error("Error saving"); 
 			return false;
@@ -465,6 +444,36 @@ class ProcessHannaCode extends Process {
 			$this->message("Deleting Page: {$page->path}"); 
 			$page->delete();
 		}
+	}
+
+	public static function getModuleConfigInputfields(array $data) {
+		
+		$themes = array();
+		$dir = new DirectoryIterator(dirname(__FILE__) . '/ace/src-min/'); 
+		foreach($dir as $file) {
+			$name = $file->getBasename();
+			if(preg_match('/^theme-([^.]+)\.js$/', $name, $matches)) {
+				$themes[] = $matches[1]; 
+			}
+		}
+
+		$form = new InputfieldWrapper();
+		$f = wire('modules')->get('InputfieldSelect'); 
+		$f->label = __('Code Editor Theme'); 
+		$f->attr('name', 'aceTheme');
+		foreach($themes as $theme) $f->addOption($theme); 
+		$f->attr('value', !empty($data['aceTheme']) ? $data['aceTheme'] : self::defaultAceTheme); 
+		$f->attr('value', self::defaultAceTheme); 
+		$f->notes = __('See the [Ace Editor demo](http://ace.c9.io/build/kitchen-sink.html) to preview what the different themes look like.'); 
+		$form->add($f); 
+
+		$f = wire('modules')->get('InputfieldInteger'); 
+		$f->label = __('Code Editor Height (in pixels)'); 
+		$f->attr('name', 'aceHeight'); 
+		$f->attr('value', isset($data['aceHeight']) ? $data['aceHeight'] : self::defaultAceHeight); 
+		$form->add($f); 
+
+		return $form; 
 	}
 
 	

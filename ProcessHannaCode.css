@@ -35,3 +35,12 @@ code {
 	background: #ffffdd; 
 }
 
+#hc_code_div {
+	position: relative; 
+	width: 100%;
+	height: 400px; 
+}
+
+#hc_save {
+	float: left; 
+}
