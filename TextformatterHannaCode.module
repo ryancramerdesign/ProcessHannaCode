@@ -18,7 +18,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	public static function getModuleInfo() {
 		return array(
 			'title' => __('Hanna Code Text Formatter', __FILE__), 
-			'version' => 10, 
+			'version' => 11, 
 			'summary' => __('Easily insert any complex HTML, Javascript or PHP output in your ProcessWire content by creating your own Hanna code tags.', __FILE__),
 			'installs' => 'ProcessHannaCode'
 			); 
@@ -115,6 +115,8 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 		if($key == 'field') return $this->field;
 			else if($key == 'value') return $this->value; 
 			else if($key == 'name') return $this->name; 
+			else if($key == 'openTag') return $this->openTag; 
+			else if($key == 'closeTag') return $this->closeTag; 
 		return parent::__get($key); 
 	}
 
@@ -187,8 +189,10 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	 * @return string
 	 *
 	 */
-	public function render($value) {
-		$this->formatValue(new NullPage(), new Field(), $value);
+	public function render($value, Page $page = null, Field $field = null) {
+		if(is_null($page)) $page = wire('page');
+		if(is_null($field)) $field = new Field(); 
+		$this->formatValue($page, $field, $value);
 		return $value; 
 	}
 

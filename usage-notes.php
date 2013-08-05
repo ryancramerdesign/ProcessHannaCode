@@ -3,7 +3,7 @@
 		<h2>PHP Usage Notes</h2>	
 		<ol>
 		<li>Your code should <code>echo</code> or <code>print</code> the value you want to appear as the replacement for the tag.</li>
-		<li>It is not necessary to begin or close your statement with open/close PHP tags. Though you may use them when/if necessary.</li>
+		<li>It is not necessary to begin or close your statement with open/close PHP tags. Though you may use them when/if necessary. Also an opening <code>&lt;?php</code> tag is desirable to enable syntax highlighting.</li>
 		<li>Your code is executed the same way as a ProcessWire template file and all API variables are locally scoped. 
 		Meaning, you can call upon <code>$page</code>, <code>$pages</code>, or any other API variables. directly.
 		See also the PHP Properties section to the right.</li>

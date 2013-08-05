@@ -21,7 +21,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		return array(
 			'title' => 'Hanna Code', 
 			'summary' => 'Easily insert any complex HTML, Javascript or PHP output in your ProcessWire content by creating your own Hanna code tags.',
-			'version' => 10, 
+			'version' => 11, 
 			'permission' => 'hanna-code', 
 			'requires' => 'TextformatterHannaCode'
 			); 
@@ -184,15 +184,59 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		}
 	}
 
+	public function ___executeTest() {
+		$name = $this->sanitizer->pageName($this->input->get->name); 
+		if(empty($name)) throw new WireException('Nothing provided to test'); 
+		$hanna = $this->modules->get('TextformatterHannaCode'); 
+		$test = $hanna->openTag . $name . $hanna->closeTag; 
+		$this->config->debug = true; 
+		$timer = Debug::timer();
+
+		$intro = $this->_('This test is here primarily to check for parse errors. Blank output indicates that there were no parse errors. You should still test in a real-world context before assuming it works. Output is in the dashed box below:');
+
+		echo <<< _OUT
+
+		<!DOCTYPE html>
+		<html>
+		<head>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+		<style type='text/css'>
+			body {
+				background: #fff;
+				color: #555; 
+				font-family: Arial;
+			}
+		</style>
+		<body>
+			<p style='margin-top: 0;'><small>$intro</small></p>
+			<p><pre>$test</pre></p>
+			<div style='border: 1px dashed #ccc; padding: 10px;'>
+
+_OUT;
+		echo $hanna->render($test); 
+
+		$seconds = sprintf($this->_('Executed in %s seconds'), Debug::timer($timer));
+
+		echo <<< _OUT
+
+			</div>
+			<p><small>$seconds</small></p>
+		</body>
+		</html>
+_OUT;
+
+		exit; 
+	}
+
 	/**
 	 * Called when the URL is this module's page URL + "/something/"
 	 *
 	 */
 	public function ___executeEdit() {
 
-
 		// add a breadcrumb that returns to our main page 
 		$this->breadcrumbs->add(new Breadcrumb('../', $this->page->title)); 
+		$this->modules->get('JqueryWireTabs'); 
 
 		$id = (int) $this->input->get->id; 
 		if($id) {
@@ -216,47 +260,27 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		}
 
 		$form = $this->modules->get('InputfieldForm'); 
+		$form->attr('id', 'HannaCodeEdit'); 
 		$form->action = './';
 		$form->method = 'post';
 
-		$f = $this->modules->get('InputfieldName'); 
-		$f->attr('name', 'hc_name'); 
-		$f->attr('value', $name); 
-		$f->description = $this->_('Any combination of these characters: -_.a-zA-Z0-9 (i.e. letters, numbers, hyphens, underscores, periods, no spaces)');
-		$form->add($f); 
+		$tab = new InputfieldWrapper();
+		$tab->attr('title', $this->_('Basics')); 
+		$tab->class .= " WireTab";
+		
+		$nameField = $this->modules->get('InputfieldName'); 
+		$nameField->attr('name', 'hc_name'); 
+		$nameField->attr('value', $name); 
+		$nameField->description = $this->_('Any combination of these characters: -_.a-zA-Z0-9 (i.e. letters, numbers, hyphens, underscores, periods, no spaces)');
+		$tab->add($nameField); 
 
-		$f = $this->modules->get('InputfieldRadios'); 
-		$f->attr('name', 'hc_type'); 
-		foreach($this->typeLabels as $key => $label) $f->addOption($key, $label); 
-		$f->attr('value', $type & TextformatterHannaCode::TYPE_NOT_CONSUMING ? $type - TextformatterHannaCode::TYPE_NOT_CONSUMING : $type); 
-		$f->label = $this->_('Type'); 
-		$f->optionColumns = 1; 
-		$form->add($f); 
-
-		$f = $this->modules->get('InputfieldMarkup'); 
-		$f->label = $this->_('PHP and Javascript Usage Notes'); 
-		$f->value = file_get_contents(dirname(__FILE__) . '/usage-notes.php'); 
-		$f->collapsed = Inputfield::collapsedYes; 
-		$form->add($f); 
-
-		$f = $this->modules->get('InputfieldTextarea'); 
-		$f->attr('id+name', 'hc_code'); 
-		$f->attr('value', $code); 
-		$f->label = $this->_('Code'); 
-		$f->attr('rows', 20); 
-		$f->attr('data-theme', $this->aceTheme); 
-		$f->attr('data-height', $this->aceHeight); 
-		$f->required = true; 
-		$form->add($f); 
-
-		$f = $this->modules->get('InputfieldTextarea'); 
-		$f->attr('id+name', 'hc_attr'); 
-		$f->attr('value', $attr); 
-		$f->label = $this->_('Attributes'); 
-		$f->description = $this->_('Optional but recommended if using attributes with PHP or Javascript: Enter one attribute name per line that your Hanna code uses. To specify a default value, enter it as "attr=value". If no default specified, value defaults to a blank string.');
-		$f->notes = $this->_('Examples:') . "\nsome_attribute\nattribute_with_default=The Default Value";
-		$f->collapsed = Inputfield::collapsedBlank;
-		$form->add($f); 
+		$typeField = $this->modules->get('InputfieldRadios'); 
+		$typeField->attr('name', 'hc_type'); 
+		foreach($this->typeLabels as $key => $label) $typeField->addOption($key, $label); 
+		$typeField->attr('value', $type & TextformatterHannaCode::TYPE_NOT_CONSUMING ? $type - TextformatterHannaCode::TYPE_NOT_CONSUMING : $type); 
+		$typeField->label = $this->_('Type'); 
+		$typeField->optionColumns = 1; 
+		$tab->add($typeField); 
 
 		$yes = $this->_('Yes');
 		$no = $this->_('No'); 
@@ -269,27 +293,78 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		$f->label = $this->_('Replace surrounding HTML tag?') . ' [' . ($value ? $no : $yes) . ']';
 		$f->description = $this->_('Should the output of this Hanna Code replace the immediate surrounding HTML tag if it is the only thing in the tag? If your Hanna Code outputs block-level HTML (like <ul> or <p> tags), this should probably be yes.'); 
 		$f->collapsed = Inputfield::collapsedYes; 
-		$form->add($f);
+		$tab->add($f);
+
+		$f = $this->modules->get('InputfieldTextarea'); 
+		$f->attr('id+name', 'hc_attr'); 
+		$f->attr('value', $attr); 
+		$f->label = $this->_('Attributes'); 
+		$f->description = $this->_('Optional but recommended if using attributes with PHP or Javascript: Enter one attribute name per line that your Hanna code uses. To specify a default value, enter it as "attr=value". If no default specified, value defaults to a blank string.');
+		$f->notes = $this->_('Examples:') . "\nsome_attribute\nattribute_with_default=The Default Value";
+		$f->collapsed = Inputfield::collapsedBlank;
+		$tab->add($f); 
+
+		$form->add($tab); 
+
+
+		$tab = new InputfieldWrapper();
+		$tab->attr('title', $this->_('Code')); 
+		$tab->class .= ' WireTab';
+
+		$f = $this->modules->get('InputfieldTextarea'); 
+		$f->attr('id+name', 'hc_code'); 
+		$f->attr('value', $code); 
+		$f->label = $this->_('Code'); 
+		$f->attr('rows', 20); 
+		$f->attr('data-theme', $this->aceTheme); 
+		$f->attr('data-height', $this->aceHeight); 
+		$f->required = true; 
+		$tab->add($f); 
+
+		$f = $this->modules->get('InputfieldMarkup'); 
+		$f->label = $this->_('PHP and Javascript Usage Notes'); 
+		$f->value = file_get_contents(dirname(__FILE__) . '/usage-notes.php'); 
+		$f->collapsed = Inputfield::collapsedYes; 
+		$tab->add($f); 
+
+		$form->add($tab); 
 
 		if($exportData) {
+			$tab = new InputfieldWrapper();
+			$tab->attr('title', $this->_('Export')); 
+			$tab->class .= " WireTab";
 			$f = $this->modules->get('InputfieldTextarea');
 			$f->attr('id+name', 'hc_export'); 
 			$f->attr('value', "!HannaCode:$name:" . base64_encode(json_encode($exportData)) . "/!HannaCode"); 
-			$f->label = $this->_('Export'); 
+			$f->label = $tab->attr('title');
 			$f->description = $this->_('To export this Hanna code and import somewhere else, copy the contents of this field and paste into the import box somewhere else.'); 
 			$f->notes = $this->_('If you have made any changes above, make sure to save before copying the export data here.'); 
-			$f->collapsed = Inputfield::collapsedYes; 
-			$form->add($f); 
+			$tab->add($f); 
+			$form->add($tab); 
 		}
 
 		if($id) {
+			$tab = new InputfieldWrapper();
+			$tab->attr('title', $this->_('Delete')); 
+			$tab->class .= " WireTab";
+			$tab->attr('id', 'HannaCodeDelete'); 
 			$f = $this->modules->get('InputfieldCheckbox'); 
 			$f->attr('name', 'hc_delete'); 
 			$f->attr('value', $id); 
-			$f->label = $this->_('Delete?'); 
-			$f->collapsed = Inputfield::collapsedYes; 
-			$form->add($f); 
+			$f->label = $tab->attr('title');
+			$f->description = $this->_('Check the box and submit the form to permanently delete this Hanna Code.'); 
+			$tab->add($f); 
+			$form->add($tab); 
 		}
+
+		if($this->input->get->test) {
+			$testForm = new InputfieldWrapper();
+			$f = $this->modules->get('InputfieldMarkup');
+			$f->label = $this->_('Test Results'); 
+			$f->value = "<iframe frameborder='0' id='HannaCodeTestPort' src='../test/?name=$name&modal=1'></iframe>";
+			$testForm->add($f); 
+			$testOutput = $testForm->render();
+		} else $testOutput = '';
 
 		$f = $this->modules->get('InputfieldHidden'); 
 		$f->attr('name', 'hc_id'); 
@@ -302,17 +377,25 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		$f->attr('value', $this->_('Save')); 
 		$form->add($f); 
 
+		if($id) { 
+			$f = $this->modules->get('InputfieldSubmit'); 
+			$f->attr('id+name', 'hc_save_test'); 
+			$f->attr('value', $this->_('Save & Test')); 
+			$form->add($f); 
+		}
+
 		$f = $this->modules->get('InputfieldSubmit'); 
 		$f->attr('id+name', 'hc_save_exit'); 
 		$f->class .= " ui-priority-secondary";
 		$f->attr('value', $this->_('Save & Exit')); 
 		$form->add($f); 
 
-		if($this->input->post->hc_save || $this->input->post->hc_save_exit) $this->save($form); 
+		$post = $this->input->post; 
+		if($post->hc_save || $post->hc_save_exit || $post->hc_save_test) $this->save($form); 
 
 		$this->config->scripts->add($this->config->urls->ProcessHannaCode . "ace/src-min/ace.js"); 
 	
-		return $form->render();
+		return $testOutput . $form->render();
 	}
 
 	/**
@@ -324,6 +407,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		$id = (int) $this->input->post->hc_id; 
 		$delete = (int) $this->input->post->hc_delete; 
 		$exitAfterSave = $this->input->post->hc_save_exit; 
+		$testAfterSave = $this->input->post->hc_save_test; 
 
 		if($delete && $delete === $id) {
 			$this->db->query("DELETE FROM hanna_code WHERE id=$delete LIMIT 1"); 	
@@ -390,6 +474,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		if($result) {
 			$this->message($this->_("Saved Hanna Code")); 				
 			if($exitAfterSave) $this->session->redirect("../?sort=-modified"); 
+				else if($testAfterSave) $this->session->redirect("./?id=$id&test=1"); 
 				else $this->session->redirect("./?id=$id"); 
 		} else {
 			$this->error("Error saving"); 

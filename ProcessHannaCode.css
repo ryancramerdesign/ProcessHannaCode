@@ -41,6 +41,12 @@ code {
 	height: 400px; 
 }
 
-#hc_save {
+#hc_save, #hc_save_test {
 	float: left; 
 }
+
+#HannaCodeTestPort {
+	width: 100%; 
+	height: 300px; 
+}
+

@@ -4,6 +4,12 @@ $(document).ready(function() {
 	var hcCode = $("#hc_code"); 
 	if(hcCode.size() > 0) {
 
+		$('#HannaCodeEdit').WireTabs({
+			items: $(".WireTab"),
+			skipRememberTabIDs: ['HannaCodeDelete']
+			});
+
+
 		var hcCodeDiv = $('<div id="hc_code_div"></div>')
 			.css('height', hcCode.attr('data-height') + 'px'); 
 
@@ -20,14 +26,29 @@ $(document).ready(function() {
 		editor.setTheme('ace/theme/' + hcCode.attr('data-theme')); 
 
 		var hcType = $("input[name=hc_type]"); 
+
 		hcType.change(function() {
+
 			if(!$(this).is(":checked")) return;
+
 			var val = $(this).val();
 			var editorMode = 'html';
-			if(val == 1) editorMode = 'javascript';
-				else if(val == 2) editorMode = 'php';
-				else editorMode = 'plain_text';
+			var editorValue = editor.getSession().getValue();
+			var phpBlankValue = "<?php\n\n";
+
+			if(val == 1) {
+				editorMode = 'javascript';
+				if(editorValue == phpBlankValue) editor.getSession().setValue('');
+			} else if(val == 2) {
+				editorMode = 'php';
+				if(editorValue.length < 1) editor.getSession().setValue(phpBlankValue);
+			} else {
+				editorMode = 'plain_text';
+				if(editorValue == phpBlankValue) editor.getSession().setValue('');
+			}
+
 			editor.getSession().setMode("ace/mode/" + editorMode); 
+
 		}).change();
 	}
 }); 
