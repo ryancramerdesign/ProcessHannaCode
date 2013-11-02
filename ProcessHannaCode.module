@@ -357,13 +357,20 @@ _OUT;
 		}
 
 		if($this->input->get->test) {
-			$testForm = new InputfieldWrapper();
+			$tab = new InputfieldWrapper();
+			$tab->attr('title', $this->_('Test Results')); 
+			$tab->class .= " WireTab";
+			$tab->attr('id', 'HannaCodeTestResults');
 			$f = $this->modules->get('InputfieldMarkup');
 			$f->label = $this->_('Test Results'); 
-			$f->value = "<iframe frameborder='0' id='HannaCodeTestPort' src='../test/?name=$name&modal=1'></iframe>";
-			$testForm->add($f); 
-			$testOutput = $testForm->render();
-		} else $testOutput = '';
+			$f->value = "
+				<iframe frameborder='0' id='HannaCodeTestPort' src='../test/?name=$name&modal=1'></iframe>
+				<script>$(document).ready(function() { $('#_HannaCodeTestResults').click(); });</script>
+				";
+			$tab->add($f); 
+			$form->add($tab); 
+			
+		} 
 
 		$f = $this->modules->get('InputfieldHidden'); 
 		$f->attr('name', 'hc_id'); 
@@ -394,7 +401,7 @@ _OUT;
 
 		$this->config->scripts->add($this->config->urls->ProcessHannaCode . "ace/src-min/ace.js"); 
 	
-		return $testOutput . $form->render();
+		return $form->render();
 	}
 
 	/**
