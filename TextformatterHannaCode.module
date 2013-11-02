@@ -18,7 +18,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	public static function getModuleInfo() {
 		return array(
 			'title' => __('Hanna Code Text Formatter', __FILE__), 
-			'version' => 12, 
+			'version' => 13, 
 			'summary' => __('Easily insert any complex HTML, Javascript or PHP output in your ProcessWire content by creating your own Hanna code tags.', __FILE__),
 			'installs' => 'ProcessHannaCode'
 			); 
@@ -125,7 +125,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	 *
 	 */
 	public function formatValue(Page $page, Field $field, &$value) {
-	
+
 		$openTag = $this->openTag; 
 		$closeTag = $this->closeTag; 
 		$this->page = $page;
@@ -146,6 +146,10 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 			'!';	
 
 		if(!preg_match_all($regx, $value, $matches)) return;
+
+		// save output formatting state and then ensure it is ON
+		$of = $this->page->of();
+		if(!$of) $this->page->of(true);
 
 		foreach($matches[2] as $key => $expression) {
 			
@@ -175,6 +179,9 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 				$this->value = str_replace("$openTag$expression$closeTag", $replacement, $this->value); 
 			}
 		}
+
+		// restore output formatting state
+		if(!$of) $this->page->of(false);
 
 		$value = $this->value; 	
 		$this->value = '';
@@ -211,7 +218,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 			'([_a-z0-9]+)' .		// 1. attribute name 
 			'\s*=\s*' . 			// Equals
 			'(' .				// 2. attribute value, possibly with quotes
-				'(["\'])' . 		// 3. open quote 
+				'(["\']|&quot;)' .	// 3. open quote 
 				'.*?' . 		// attribute value unquoted
 				'\3' .			// close quote	
 			'|' .				// OR 
