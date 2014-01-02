@@ -47,7 +47,8 @@ function initHannaCodeAce() {
 
 $(document).ready(function() {
 	$("#hc_export").click(function() { $(this).select(); });
-	$('#HannaCodeEdit').WireTabs({
+	var $edit = $('#HannaCodeEdit'); 
+	if($edit.size()) $('#HannaCodeEdit').WireTabs({
 		items: $(".WireTab"),
 		skipRememberTabIDs: ['HannaCodeDelete']
 		});
