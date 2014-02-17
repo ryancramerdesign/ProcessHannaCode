@@ -389,10 +389,20 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 		foreach(wire() as $key => $value) {
 			if($key != 'page') $t->set($key, $value); 
 		}
-
+		
+		// set $page to the page containing the field, taking into account the repeater case
+		if ($this->page instanceof RepeaterPage) {
+			$repeaterPage = $this->page;
+			$page = $fieldGroup->getForPage();
+		}
+		else {
+			$page = $this->page;
+		}
+			
 		// populate $page and $hanna variables that are context specific
 		// note $page may be different from wire('page')
-		$t->set('page', $this->page);
+		if ($repeaterPage) $t->set('group', $repeaterPage);
+		$t->set('page', $page);
 		$t->set('hanna', $this); 
 
 		return $t->render();
