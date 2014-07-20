@@ -4,7 +4,7 @@
  * Process Hanna Code
  *
  * ProcessWire 2.x 
- * Copyright (C) 2013 by Ryan Cramer 
+ * Copyright (C) 2014 by Ryan Cramer 
  * Licensed under GNU/GPL v2, see LICENSE.TXT
  * 
  * http://processwire.com
@@ -21,8 +21,10 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		return array(
 			'title' => 'Hanna Code', 
 			'summary' => 'Easily insert any complex HTML, Javascript or PHP output in your ProcessWire content by creating your own Hanna code tags.',
-			'version' => 15, 
+			'version' => 16, 
 			'permission' => 'hanna-code', 
+			'permissions' => array('hanna-code' => 'Add or edit Hanna Codes'), 
+			'icon' => 'sun-o', 
 			'requires' => 'TextformatterHannaCode'
 			); 
 	}
@@ -44,6 +46,12 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 	 *
 	 */
 	const defaultAceHeight = '400';
+
+	/**
+	 * Ace editor version
+	 *
+	 */
+	const aceVersion = '1.1.5';
 
 	/**
 	 * Instance of TextformatterHannaCode
@@ -300,7 +308,7 @@ _OUT;
 
 		$f = $this->modules->get('InputfieldTextarea'); 
 		$f->attr('id+name', 'hc_attr'); 
-		$f->attr('value', $attr); 
+		$f->attr('value', trim($attr)); 
 		$f->label = $this->_('Attributes'); 
 		$f->description = $this->_('Optional but recommended if using attributes with PHP or Javascript: Enter one attribute name per line that your Hanna code uses. To specify a default value, enter it as "attr=value". If no default specified, value defaults to a blank string.');
 		$f->notes = $this->_('Examples:') . "\nsome_attribute\nattribute_with_default=The Default Value";
@@ -402,7 +410,7 @@ _OUT;
 		$post = $this->input->post; 
 		if($post->hc_save || $post->hc_save_exit || $post->hc_save_test) $this->save($form); 
 
-		$this->config->scripts->add($this->config->urls->ProcessHannaCode . "ace/src-min/ace.js"); 
+		$this->config->scripts->add($this->config->urls->ProcessHannaCode . "ace-" . self::aceVersion . "/src-min/ace.js"); 
 	
 		return $form->render();
 	}
@@ -541,7 +549,7 @@ _OUT;
 	public static function getModuleConfigInputfields(array $data) {
 		
 		$themes = array();
-		$dir = new DirectoryIterator(dirname(__FILE__) . '/ace/src-min/'); 
+		$dir = new DirectoryIterator(dirname(__FILE__) . '/ace-' . self::aceVersion . '/src-min/'); 
 		foreach($dir as $file) {
 			$name = $file->getBasename();
 			if(preg_match('/^theme-([^.]+)\.js$/', $name, $matches)) {

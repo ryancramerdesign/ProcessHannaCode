@@ -6,7 +6,7 @@
  * Based loosely on the WordPress Hana Code Insert module at: http://wordpress.org/plugins/hana-code-insert/
  *
  * ProcessWire 2.x 
- * Copyright (C) 2013 by Ryan Cramer 
+ * Copyright (C) 2014 by Ryan Cramer 
  * Licensed under GNU/GPL v2, see LICENSE.TXT
  * 
  * http://processwire.com
@@ -18,9 +18,10 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	public static function getModuleInfo() {
 		return array(
 			'title' => __('Hanna Code Text Formatter', __FILE__), 
-			'version' => 15, 
+			'version' => 16, 
 			'summary' => __('Easily insert any complex HTML, Javascript or PHP output in your ProcessWire content by creating your own Hanna code tags.', __FILE__),
-			'installs' => 'ProcessHannaCode'
+			'installs' => 'ProcessHannaCode',
+			'icon' => 'sun-o', 
 			); 
 	}
 
@@ -288,6 +289,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 		foreach($defaultAttrs as $key => $value) {
 			if(!array_key_exists($key, $attrs)) $attrs[$key] = $value; 
 		}
+
 
 		if($type & self::TYPE_JS) $value = $this->getJS($name, $code, $attrs); 
 			else if($type & self::TYPE_PHP) $value = $this->getPHP($name, $code, $attrs); 
