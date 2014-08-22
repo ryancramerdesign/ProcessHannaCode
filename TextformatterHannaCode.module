@@ -18,7 +18,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	public static function getModuleInfo() {
 		return array(
 			'title' => __('Hanna Code Text Formatter', __FILE__), 
-			'version' => 16, 
+			'version' => 18, 
 			'summary' => __('Easily insert any complex HTML, Javascript or PHP output in your ProcessWire content by creating your own Hanna code tags.', __FILE__),
 			'installs' => 'ProcessHannaCode',
 			'icon' => 'sun-o', 
@@ -465,6 +465,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	 *
 	 */
 	public function ___uninstall() {
+		parent::___uninstall(); 
 
 		$sql = "DROP TABLE hanna_code"; 
 
