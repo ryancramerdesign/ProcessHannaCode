@@ -239,7 +239,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 			// allow for optional [[name_here attrs]] expression
 			// where the 'name' isn't specifically called out as an attribute
 			// but is the first symbol in the expression
-			if(preg_match('!^([-_a-z0-9]+)([\s,]|$)!i', $expression, $matches)) {
+			if(preg_match('!^([\.-_a-z0-9]+)([\s,]|$)!i', $expression, $matches)) {
 				$attrs['name'] = $matches[1]; 
 			}
 		}
