@@ -75,7 +75,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	 * $value passed to the Textformatter's formatValue() function
 	 *
 	 */
-	protected $value; 
+	protected $value = '';
 
 	/**
 	 * $name of the current Hanna code
@@ -129,6 +129,9 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 
 		$openTag = $this->openTag; 
 		$closeTag = $this->closeTag; 
+		$savedPage = $this->page;
+		$savedField = $this->field;
+		$savedValue = $this->value;
 		$this->page = $page;
 		$this->field = $field; 
 		$this->value = $value; 
@@ -185,9 +188,9 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 		if(!$of) $this->page->of(false);
 
 		$value = $this->value; 	
-		$this->value = '';
-		$this->page = null;
-		$this->field = null;
+		$this->value = $savedValue;
+		$this->page = $savedPage;
+		$this->field = $savedField;
 	}
 
 	/**
