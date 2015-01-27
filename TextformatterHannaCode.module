@@ -75,7 +75,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	 * $value passed to the Textformatter's formatValue() function
 	 *
 	 */
-	protected $value; 
+	protected $value = '';
 
 	/**
 	 * $name of the current Hanna code
@@ -129,9 +129,6 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 
 		$openTag = $this->openTag; 
 		$closeTag = $this->closeTag; 
-		$this->page = $page;
-		$this->field = $field; 
-		$this->value = $value; 
 
 		// exit early when possible
 		if(strpos($value, $openTag) === false) return;
@@ -147,6 +144,14 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 			'!';	
 
 		if(!preg_match_all($regx, $value, $matches)) return;
+
+		// save context for recursion
+		$savedPage = $this->page;
+		$savedField = $this->field;
+		$savedValue = $this->value;
+		$this->page = $page;
+		$this->field = $field;
+		$this->value = $value;
 
 		// save output formatting state and then ensure it is ON
 		$of = $this->page->of();
@@ -184,10 +189,12 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 		// restore output formatting state
 		if(!$of) $this->page->of(false);
 
-		$value = $this->value; 	
-		$this->value = '';
-		$this->page = null;
-		$this->field = null;
+		$value = $this->value;
+
+		// restore context
+		$this->value = $savedValue;
+		$this->page = $savedPage;
+		$this->field = $savedField;
 	}
 
 	/**
@@ -239,7 +246,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 			// allow for optional [[name_here attrs]] expression
 			// where the 'name' isn't specifically called out as an attribute
 			// but is the first symbol in the expression
-			if(preg_match('!^([-_a-z0-9]+)([\s,]|$)!i', $expression, $matches)) {
+			if(preg_match('!^([\.-_a-z0-9]+)([\s,]|$)!i', $expression, $matches)) {
 				$attrs['name'] = $matches[1]; 
 			}
 		}
