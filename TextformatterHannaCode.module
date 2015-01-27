@@ -129,12 +129,6 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 
 		$openTag = $this->openTag; 
 		$closeTag = $this->closeTag; 
-		$savedPage = $this->page;
-		$savedField = $this->field;
-		$savedValue = $this->value;
-		$this->page = $page;
-		$this->field = $field; 
-		$this->value = $value; 
 
 		// exit early when possible
 		if(strpos($value, $openTag) === false) return;
@@ -150,6 +144,14 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 			'!';	
 
 		if(!preg_match_all($regx, $value, $matches)) return;
+
+		// save context for recursion
+		$savedPage = $this->page;
+		$savedField = $this->field;
+		$savedValue = $this->value;
+		$this->page = $page;
+		$this->field = $field;
+		$this->value = $value;
 
 		// save output formatting state and then ensure it is ON
 		$of = $this->page->of();
@@ -187,7 +189,9 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 		// restore output formatting state
 		if(!$of) $this->page->of(false);
 
-		$value = $this->value; 	
+		$value = $this->value;
+
+		// restore context
 		$this->value = $savedValue;
 		$this->page = $savedPage;
 		$this->field = $savedField;
