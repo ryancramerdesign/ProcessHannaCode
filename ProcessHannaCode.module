@@ -3,11 +3,14 @@
 /**
  * Process Hanna Code
  *
- * ProcessWire 2.x 
- * Copyright (C) 2014 by Ryan Cramer 
- * Licensed under GNU/GPL v2, see LICENSE.TXT
+ * Copyright (C) 2016 by Ryan Cramer 
+ * Licensed under MPL 2.0
+ * https://processwire.com
  * 
- * http://processwire.com
+ * @property array $typeLabels
+ * @property string $openTag
+ * @property string $closeTag
+ * @property TextformatterHannaCode $hanna
  *
  */
 
@@ -21,7 +24,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		return array(
 			'title' => 'Hanna Code', 
 			'summary' => 'Easily insert any complex HTML, Javascript or PHP output in your ProcessWire content by creating your own Hanna code tags.',
-			'version' => 19, 
+			'version' => 20, 
 			'permission' => 'hanna-code', 
 			'permissions' => array(
 				'hanna-code' => 'List and view Hanna Codes',
@@ -105,8 +108,8 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 	public function init() {
 		parent::init(); // required
 		$data = $this->modules->getModuleConfigData('TextformatterHannaCode'); 
-		$this->set('openTag', isset($data['openTag']) ? $data['openTag'] : TextformatterHannaCode::DEFAULT_OPEN_TAG); 
-		$this->set('closeTag', isset($data['closeTag']) ? $data['closeTag'] : TextformatterHannaCode::DEFAULT_CLOSE_TAG); 
+		$this->set('openTag', isset($data['openTag']) ? $data['openTag'] : \TextformatterHannaCode::DEFAULT_OPEN_TAG); 
+		$this->set('closeTag', isset($data['closeTag']) ? $data['closeTag'] : \TextformatterHannaCode::DEFAULT_CLOSE_TAG); 
 		$this->set('typeLabels', array(
 			0 => $this->_('Text/HTML'),
 			1 => $this->_('Javascript'),
@@ -147,7 +150,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 	}
 
 	protected function editable($type) {
-		if($type == TextformatterHannaCode::TYPE_PHP) return $this->hasPermission('hanna-code-php'); 
+		if($type == \TextformatterHannaCode::TYPE_PHP) return $this->hasPermission('hanna-code-php'); 
 		return $this->hasPermission('hanna-code-edit'); 
 	}
 
@@ -157,6 +160,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 	 */
 	public function ___execute() {
 
+		/** @var MarkupAdminDataTable $table */
 		$table = $this->modules->get('MarkupAdminDataTable'); 
 		$table->setEncodeEntities(false); 
 		$table->headerRow(array(
@@ -170,7 +174,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		$typeLabels = $this->typeLabels;
 
 		$sort = 'name';
-		if($this->input->get->sort == '-modified') $sort = 'modified DESC';
+		if($this->input->get('sort') == '-modified') $sort = 'modified DESC';
 		$sql = "SELECT id, name, type, modified, accessed, code FROM hanna_code ORDER BY :sort";
 		$query = $this->database->prepare($sql);
 		$query->bindValue(':sort', $sort); 
@@ -187,7 +191,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 			if(preg_match('/[a-zA-Z0-9]$/', $this->openTag)) $name = " name=\"$name\"";
 			$tag = $this->openTag . $name . $attrs . $this->closeTag; 
 
-			if($type & TextformatterHannaCode::TYPE_NOT_CONSUMING) $type -= TextformatterHannaCode::TYPE_NOT_CONSUMING; 
+			if($type & \TextformatterHannaCode::TYPE_NOT_CONSUMING) $type -= \TextformatterHannaCode::TYPE_NOT_CONSUMING; 
 
 			$table->row(array(
 				wire('sanitizer')->entities($name) => "edit/?id=$id",
@@ -202,12 +206,14 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		if(!$numRows) $this->message($this->_('No Hanna Codes yet, go ahead and add one!')); 
 
 		if($this->hasPermission('hanna-code-edit')) {
+			/** @var InputfieldButton $button1 */
 			$button1 = $this->modules->get('InputfieldButton'); 
 			$button1->attr('id', 'button_add'); 
 			$button1->attr('value', $this->_('Add New')); 
 			$button1->attr('href', './edit/'); 
 			$button1->class .= ' head_button_clone';
 
+			/** @var InputfieldButton $button2 */
 			$button2 = $this->modules->get('InputfieldButton'); 
 			$button2->attr('id', 'button_import'); 
 			$button2->attr('value', $this->_('Import')); 
@@ -228,20 +234,24 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 	public function ___executeImport() {
 
 		if(!$this->hasPermission('hanna-code-edit')) throw new WireException("No permission"); 
+		
+		/** @var InputfieldForm $form */
 		$form = $this->modules->get('InputfieldForm'); 
 
+		/** @var InputfieldTextarea $f */
 		$f = $this->modules->get('InputfieldTextarea');
 		$f->attr('id+name', 'hc_import'); 
 		$f->label = $this->_("Paste in Import Data"); 
 		$form->add($f); 
 
+		/** @var InputfieldSubmit $f */
 		$f = $this->modules->get('InputfieldSubmit');
 		$f->attr('name', 'submit_import'); 
 		$form->add($f); 
 
-		Wire::setFuel('processHeadline', $this->_("Import Hanna Code")); 
+		$this->headline($this->_("Import Hanna Code")); 
 
-		if(!$this->input->post->submit_import) return $form->render();
+		if(!$this->input->post('submit_import')) return $form->render();
 
 		$form->processInput($this->input->post); 
 		$data = $form->get('hc_import')->value; 
@@ -260,11 +270,12 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		list($n) = $query->fetch(PDO::FETCH_NUM); 
 		if($n > 0) {
 			$this->error($this->_('Hanna Code with that name already exists')); 
-			return $this->session->redirect('../'); 
+			$this->session->redirect('../'); 
+			return '';
 		}
 
 		$data['type'] = (int) $data['type']; 
-		if($data['type'] == TextformatterHannaCode::TYPE_PHP && !$this->hasPermission('hanna-code-php')) {
+		if($data['type'] == \TextformatterHannaCode::TYPE_PHP && !$this->hasPermission('hanna-code-php')) {
 			throw new WireException("You don't have permission to add/edit PHP Hanna Codes"); 
 		}
 
@@ -282,13 +293,13 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		} else {
 			throw new WireException("Error importing (database insert)"); 
 		}
+		return '';
 	}
 
 	public function ___executeTest() {
-		$name = $this->sanitizer->pageName($this->input->get->name); 
+		$name = $this->sanitizer->pageName($this->input->get('name')); 
 		if(empty($name)) throw new WireException('Nothing provided to test'); 
-		$hanna = $this->modules->get('TextformatterHannaCode'); 
-		$test = $hanna->openTag . $name . $hanna->closeTag; 
+		$test = $this->hanna->openTag . $name . $this->hanna->closeTag; 
 		$this->config->debug = true; 
 		error_reporting(E_ALL | E_STRICT);
 		ini_set('display_errors', 1);
@@ -315,7 +326,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 			<div style='border: 1px dashed #ccc; padding: 10px;'>
 
 _OUT;
-		echo $hanna->render($test); 
+		echo $this->hanna->render($test); 
 
 		$seconds = sprintf($this->_('Executed in %s seconds'), Debug::timer($timer));
 
@@ -337,10 +348,10 @@ _OUT;
 	public function ___executeEdit() {
 
 		// add a breadcrumb that returns to our main page 
-		$this->breadcrumbs->add(new Breadcrumb('../', $this->page->title)); 
+		$this->wire('breadcrumbs')->add(new Breadcrumb('../', $this->page->title)); 
 		$this->modules->get('JqueryWireTabs'); 
 
-		$id = (int) $this->input->get->id; 
+		$id = (int) $this->input->get('id'); 
 		if($id) {
 			$query = $this->database->prepare("SELECT name, type, code FROM hanna_code WHERE id=:id"); 
 			$query->bindValue(':id', $id); 
@@ -353,49 +364,53 @@ _OUT;
 				$attr .= strlen($attrValue) ? "$attrName=$attrValue\n" : "$attrName\n";
 			}
 
-			Wire::setFuel('processHeadline', $this->_("Edit Hanna Code:") . " $name");
+			$this->headline($this->_("Edit Hanna Code:") . " $name");
 		} else {
 			$name = '';
 			$type = 0;
 			$code = '';
 			$attr = '';
 			$exportData = null;
-			Wire::setFuel('processHeadline', $this->_("Adding New Hanna Code")); 
+			$this->headline($this->_("Adding New Hanna Code")); 
 			if(!$this->editable($type)) throw new WireException("You don't have permission to add new Hanna Codes"); 
 		}
 
 		$editable = $this->editable($type); 
 		if(!$editable) $this->message($this->_('This Hanna Code is read-only')); 
 
+		/** @var InputfieldForm $form */
 		$form = $this->modules->get('InputfieldForm'); 
 		$form->attr('id', 'HannaCodeEdit'); 
-		$form->action = './';
-		$form->method = 'post';
+		$form->attr('action', './');
+		$form->attr('method', 'post');
 
 		$tab = new InputfieldWrapper();
 		$tab->attr('title', $this->_('Basics')); 
 		$tab->class .= " WireTab";
-		
+	
+		/** @var InputfieldName $nameField */
 		$nameField = $this->modules->get('InputfieldName'); 
 		$nameField->attr('name', 'hc_name'); 
 		$nameField->attr('value', $name); 
 		$nameField->description = $this->_('Any combination of these characters: -_.a-zA-Z0-9 (i.e. letters, numbers, hyphens, underscores, periods, no spaces)');
 		$tab->add($nameField); 
 
+		/** @var InputfieldRadios $typeField */
 		$typeField = $this->modules->get('InputfieldRadios'); 
 		$typeField->attr('name', 'hc_type'); 
 		foreach($this->typeLabels as $key => $label) {
-			if($key == TextformatterHannaCode::TYPE_PHP && !$this->editable($key) && $type != $key) continue; 
+			if($key == \TextformatterHannaCode::TYPE_PHP && !$this->editable($key) && $type != $key) continue; 
 			$typeField->addOption($key, $label); 
 		}
-		$typeField->attr('value', $type & TextformatterHannaCode::TYPE_NOT_CONSUMING ? $type - TextformatterHannaCode::TYPE_NOT_CONSUMING : $type); 
+		$typeField->attr('value', $type & \TextformatterHannaCode::TYPE_NOT_CONSUMING ? $type - \TextformatterHannaCode::TYPE_NOT_CONSUMING : $type); 
 		$typeField->label = $this->_('Type'); 
 		$typeField->optionColumns = 1; 
 		$tab->add($typeField); 
 
 		$yes = $this->_('Yes');
 		$no = $this->_('No'); 
-		$value = $type & TextformatterHannaCode::TYPE_NOT_CONSUMING ? 1 : 0;
+		$value = $type & \TextformatterHannaCode::TYPE_NOT_CONSUMING ? 1 : 0;
+		/** @var InputfieldRadios $f */
 		$f = $this->modules->get('InputfieldRadios'); 
 		$f->attr('name', 'hc_not_consuming'); 
 		$f->addOption(0, $yes);
@@ -406,6 +421,7 @@ _OUT;
 		$f->collapsed = Inputfield::collapsedYes; 
 		$tab->add($f);
 
+		/** @var InputfieldTextarea $f */
 		$f = $this->modules->get('InputfieldTextarea'); 
 		$f->attr('id+name', 'hc_attr'); 
 		$f->attr('value', trim($attr)); 
@@ -437,12 +453,14 @@ _OUT;
 		if($aceData['aceHeight'] < 100) $aceData['aceHeight'] = self::defaultAceHeight; 
 		if($aceData['aceHeight'] > 2000) $aceData['aceHeight'] = 2000; 
 
+		/** @var InputfieldFieldset $fs */
 		$fs = $this->modules->get('InputfieldFieldset');
 		$fs->label = $this->_('Options'); 
 		if($this->user->isSuperuser()) $fs->description = $this->_('Settings selected here will last for this session. If you want to set them permanently, select them in the ProcessHannaCode module configuration.'); 
 		$fs->collapsed = true; 
 		$tab->add($fs);
 
+		/** @var InputfieldTextarea $f */
 		$f = $this->modules->get('InputfieldTextarea'); 
 		$f->attr('id+name', 'hc_code'); 
 		$f->attr('value', $code); 
@@ -454,12 +472,12 @@ _OUT;
 		$f->attr('data-behaviors', (int) $aceData['aceBehaviors']); 
 		$tab->add($f); 
 
-
 		foreach(self::getModuleConfigInputfields($aceData) as $f) {
 			$f->notes = '';
 			$fs->add($f); 
 		}
 
+		/** @var InputfieldMarkup $f */
 		$f = $this->modules->get('InputfieldMarkup'); 
 		$f->label = $this->_('PHP and Javascript Usage Notes'); 
 		$f->value = file_get_contents(dirname(__FILE__) . '/usage-notes.php'); 
@@ -472,6 +490,7 @@ _OUT;
 			$tab = new InputfieldWrapper();
 			$tab->attr('title', $this->_('Export')); 
 			$tab->class .= " WireTab";
+			/** @var InputfieldTextarea $f */
 			$f = $this->modules->get('InputfieldTextarea');
 			$f->attr('id+name', 'hc_export'); 
 			$f->attr('value', "!HannaCode:$name:" . base64_encode(json_encode($exportData)) . "/!HannaCode"); 
@@ -487,6 +506,7 @@ _OUT;
 			$tab->attr('title', $this->_('Delete')); 
 			$tab->class .= " WireTab";
 			$tab->attr('id', 'HannaCodeDelete'); 
+			/** @var InputfieldCheckbox $f */
 			$f = $this->modules->get('InputfieldCheckbox'); 
 			$f->attr('name', 'hc_delete'); 
 			$f->attr('value', $id); 
@@ -496,28 +516,31 @@ _OUT;
 			$form->add($tab); 
 		}
 
-		if($this->input->get->test) {
+		if($this->input->get('test')) {
 			$tab = new InputfieldWrapper();
 			$tab->attr('title', $this->_('Test Results')); 
 			$tab->class .= " WireTab";
 			$tab->attr('id', 'HannaCodeTestResults');
+			/** @var InputfieldMarkup $f */
 			$f = $this->modules->get('InputfieldMarkup');
 			$f->label = $this->_('Test Results'); 
 			$f->value = "
-				<iframe frameborder='0' id='HannaCodeTestPort' src='../test/?name=$name&modal=1'></iframe>
-				<script>$(document).ready(function() { $('#_HannaCodeTestResults').click(); });</script>
+				<ifr" . "ame frameborder='0' id='HannaCodeTestPort' src='../test/?name=$name&modal=1'></iframe>
+				<scr" . "ipt>$(document).ready(function() { setTimeout(function() { $('#_HannaCodeTestResults').click(); }, 500); });</script>
 				";
 			$tab->add($f); 
 			$form->add($tab); 
 			
 		} 
 
+		/** @var InputfieldHidden $f */
 		$f = $this->modules->get('InputfieldHidden'); 
 		$f->attr('name', 'hc_id'); 
 		$f->attr('value', $id); 
 		$form->add($f); 
 
 		if($editable) { 
+			/** @var InputfieldSubmit $f */
 			$f = $this->modules->get('InputfieldSubmit'); 
 			$f->class .= ' head_button_clone';
 			$f->attr('id+name', 'hc_save'); 
@@ -539,8 +562,8 @@ _OUT;
 			$form->add($f); 
 		}
 
-		$post = $this->input->post; 
-		if($post->hc_save || $post->hc_save_exit || $post->hc_save_test) $this->save($form); 
+		$input = $this->input;
+		if($input->post('hc_save') || $input->post('hc_save_exit') || $input->post('hc_save_test')) $this->save($form); 
 
 		$this->config->scripts->add($this->config->urls->ProcessHannaCode . "ace-" . self::aceVersion . "/src-min/ace.js"); 
 	
@@ -549,6 +572,10 @@ _OUT;
 
 	/**
 	 * Save Hanna code
+	 * 
+	 * @param InputfieldForm $form
+	 * @return bool
+	 * @throws WireException
 	 *
 	 */
 	protected function save($form) {
@@ -556,14 +583,14 @@ _OUT;
 		$permissionError = $this->_('You do not hae permission to save this.'); 
 		if(!$this->hasPermission('hanna-code-edit')) throw new WireException($permissionError); 
 
-		$id = (int) $this->input->post->hc_id; 
-		$type = (int) $this->input->post->hc_type; 
-		$delete = (int) $this->input->post->hc_delete; 
-		$exitAfterSave = $this->input->post->hc_save_exit; 
-		$testAfterSave = $this->input->post->hc_save_test; 
+		$id = (int) $this->input->post('hc_id'); 
+		$type = (int) $this->input->post('hc_type'); 
+		$delete = (int) $this->input->post('hc_delete'); 
+		$exitAfterSave = $this->input->post('hc_save_exit'); 
+		$testAfterSave = $this->input->post('hc_save_test'); 
 		$prevType = 0;
 		$database = $this->database; 
-		$phpType = TextformatterHannaCode::TYPE_PHP; 
+		$phpType = \TextformatterHannaCode::TYPE_PHP; 
 		
 		if($id) {
 			$query = $database->prepare("SELECT `type` FROM hanna_code WHERE id=:id"); 	
@@ -631,7 +658,7 @@ _OUT;
 		}
 
 		if($notc) {
-			$type = $type | TextformatterHannaCode::TYPE_NOT_CONSUMING; 
+			$type = $type | \TextformatterHannaCode::TYPE_NOT_CONSUMING; 
 		}
 
 		if(empty($name)) {
@@ -659,6 +686,7 @@ _OUT;
 			if($exitAfterSave) $this->session->redirect("../?sort=-modified"); 
 				else if($testAfterSave) $this->session->redirect("./?id=$id&test=1"); 
 				else $this->session->redirect("./?id=$id"); 
+			return true;
 		} else {
 			$this->error("Error saving"); 
 			return false;
@@ -749,6 +777,7 @@ _OUT;
 		if(!isset($data['aceKeybinding'])) $data['aceKeybinding'] = self::defaultAceKeybinding;
 		if(!isset($data['aceBehaviors'])) $data['aceBehaviors'] = self::defaultAceBehaviors;
 
+		/** @var InputfieldSelect $f */
 		$f = wire('modules')->get('InputfieldSelect'); 
 		$f->label = __('Theme'); 
 		$f->attr('id+name', 'aceTheme');
@@ -758,6 +787,7 @@ _OUT;
 		$f->columnWidth = 34;
 		$form->add($f); 
 
+		/** @var InputfieldSelect $f */
 		$f = wire('modules')->get('InputfieldSelect'); 
 		$f->label = __('Keyboard'); 
 		$f->attr('id+name', 'aceKeybinding');
@@ -767,6 +797,7 @@ _OUT;
 		$f->columnWidth = 33;
 		$form->add($f); 
 
+		/** @var InputfieldInteger $f */
 		$f = wire('modules')->get('InputfieldInteger'); 
 		$f->label = __('Editor Height (in pixels)'); 
 		$f->attr('id+name', 'aceHeight'); 
@@ -775,6 +806,7 @@ _OUT;
 		$f->columnWidth = 33;
 		$form->add($f); 
 
+		/** @var InputfieldCheckboxes $f */
 		$f = wire('modules')->get('InputfieldCheckboxes'); 
 		$f->attr('id+name', 'aceBehaviors'); 
 		$f->label = __('Behaviors');
