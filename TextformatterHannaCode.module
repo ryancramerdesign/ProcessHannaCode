@@ -331,7 +331,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	 * @return string
 	 *
 	 */
-	protected function getJS($name, $code, array $attrs) {
+	protected function ___getJS($name, $code, array $attrs) {
 
 		if($name) {}
 		$vars = '';
@@ -374,7 +374,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	 * @throws WireException
 	 *
 	 */
-	protected function getPHP($name, $code, array $attrs) {
+	protected function ___getPHP($name, $code, array $attrs) {
 
 		if(!is_dir($this->cachePath)) if(!wireMkdir($this->cachePath)) {
 			throw new WireException("Unable to create cache path: $this->cachePath"); 
