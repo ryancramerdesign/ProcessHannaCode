@@ -1,11 +1,11 @@
-<?php
+<?php namespace ProcessWire;
 
 /**
  * ProcessWire Hanna Code Textformatter
  *
  * Based loosely on the WordPress Hana Code Insert module at: http://wordpress.org/plugins/hana-code-insert/
  *
- * Copyright (C) 2016 by Ryan Cramer 
+ * Copyright (C) 2016 by Ryan Cramer
  * Licensed under MPL 2.0
  * https://processwire.com
  *
@@ -15,12 +15,12 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 
 	public static function getModuleInfo() {
 		return array(
-			'title' => __('Hanna Code Text Formatter', __FILE__), 
-			'version' => 20, 
+			'title' => __('Hanna Code Text Formatter', __FILE__),
+			'version' => 20,
 			'summary' => __('Easily insert any complex HTML, Javascript or PHP output in your ProcessWire content by creating your own Hanna code tags.', __FILE__),
 			'installs' => 'ProcessHannaCode',
-			'icon' => 'sun-o', 
-			); 
+			'icon' => 'sun-o',
+			);
 	}
 
 	/**
@@ -28,14 +28,14 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	 *
 	 */
 	const TYPE_HTML = 0;
-	const TYPE_JS = 1; 
-	const TYPE_PHP = 2; 
+	const TYPE_JS = 1;
+	const TYPE_PHP = 2;
 
 	/**
 	 * Flag that indicates Hanna code should not consume surrounding <p> tags
 	 *
 	 */
-	const TYPE_NOT_CONSUMING = 4; 
+	const TYPE_NOT_CONSUMING = 4;
 
 	/**
 	 * Defaults for configuration
@@ -46,7 +46,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 
 	/**
 	 * Path where we cache PHP Hanna code files
-	 * 
+	 *
 	 * @var string
 	 *
 	 */
@@ -57,7 +57,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	 *
 	 */
 	protected $openTag = '';
-	
+
 	/**
 	 * Close tag setting
 	 *
@@ -66,7 +66,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 
 	/**
 	 * Page object passed to the Textformatter's formatValue() function
-	 * 
+	 *
 	 * @var Page
 	 *
 	 */
@@ -74,7 +74,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 
 	/**
 	 * Field object passed to the Textformatter's formatValue() function
-	 * 
+	 *
 	 * @var Field
 	 *
 	 */
@@ -82,19 +82,19 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 
 	/**
 	 * $value passed to the Textformatter's formatValue() function
-	 * 
+	 *
 	 * @var string
 	 *
 	 */
-	protected $value; 
+	protected $value;
 
 	/**
 	 * $name of the current Hanna code
-	 * 
+	 *
 	 * @var string
 	 *
 	 */
-	protected $name; 
+	protected $name;
 
 	/**
 	 * Initialize defaults
@@ -102,13 +102,13 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	 */
 	public function __construct() {
 		$this->openTag = self::DEFAULT_OPEN_TAG;
-		$this->closeTag = self::DEFAULT_CLOSE_TAG; 
+		$this->closeTag = self::DEFAULT_CLOSE_TAG;
 		$this->cachePath = $this->wire('config')->paths->cache . 'HannaCode/';
 	}
 
 	/**
 	 * For the ConfigurableModule interface
-	 * 
+	 *
 	 * @param string $key
 	 * @param mixed $value
 	 * @return void
@@ -117,9 +117,9 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	public function __set($key, $value) {
 		// so that Hanna code can modify the original full value
 		if($key == 'value') {
-			$this->value = $value; 
+			$this->value = $value;
 		} else if($key == 'openTag' || $key == 'closeTag') {
-			$this->$key = $value; 
+			$this->$key = $value;
 		} else {
 			parent::set($key, $value);
 		}
@@ -127,44 +127,44 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 
 	/**
 	 * Values that can be retrieved from the $hanna variable passed to all Hanna codes
-	 * 
+	 *
 	 * @param string $key
 	 * @return mixed
 	 *
 	 */
 	public function __get($key) {
 		if($key == 'field') return $this->field;
-			else if($key == 'value') return $this->value; 
-			else if($key == 'name') return $this->name; 
-			else if($key == 'openTag') return $this->openTag; 
-			else if($key == 'closeTag') return $this->closeTag; 
-		return parent::__get($key); 
+			else if($key == 'value') return $this->value;
+			else if($key == 'name') return $this->name;
+			else if($key == 'openTag') return $this->openTag;
+			else if($key == 'closeTag') return $this->closeTag;
+		return parent::__get($key);
 	}
 
 	/**
 	 * For the Textformatter interface
-	 * 
+	 *
 	 * @param Page $page
 	 * @param Field $field
 	 * @param string $value
 	 *
 	 */
 	public function formatValue(Page $page, Field $field, &$value) {
-		
-		$openTag = $this->openTag; 
-		$closeTag = $this->closeTag; 
+
+		$openTag = $this->openTag;
+		$closeTag = $this->closeTag;
 		// exit early when possible
 		if(strpos($value, $openTag) === false) return;
 		if(strpos($value, $closeTag) === false) return;
 
-		$regx =	'!' . 
-			'(?:<([a-zA-Z]+)' .		    // 1=optional HTML open tag 
-			'[^>]*>[\s\r\n]*)?' . 		// HTML open tag attributes and whitespace, if present	
-			preg_quote($openTag, '!') . // Hanna Code open tag	
+		$regx =	'!' .
+			'(?:<([a-zA-Z]+)' .		    // 1=optional HTML open tag
+			'[^>]*>[\s\r\n]*)?' . 		// HTML open tag attributes and whitespace, if present
+			preg_quote($openTag, '!') . // Hanna Code open tag
 			'(.+?)' . 			        // 2=tag contents
 			preg_quote($closeTag, '!') .// Hanna Code close tag
 			'(?:[\s\r\n]*</(\1)>)?' . 	// 3=optional close HTML tag
-			'!';	
+			'!';
 
 		if(!preg_match_all($regx, $value, $matches)) return;
 
@@ -180,39 +180,39 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 		if(!$of) $this->page->of(true);
 
 		foreach($matches[2] as $key => $expression) {
-			
+
 			if(strpos($expression, '=')) {
 				// expression with attrs
-				$attrs = $this->getAttributes($expression); 
-				if(!isset($attrs['name'])) continue; 
-			} else {	
+				$attrs = $this->getAttributes($expression);
+				if(!isset($attrs['name'])) continue;
+			} else {
 				// no attribute expression
-				$attrs = array('name' => $expression); 
+				$attrs = array('name' => $expression);
 			}
 
-			$name = $this->wire('sanitizer')->name($attrs['name']); 
-			$this->name = $name; 
+			$name = $this->wire('sanitizer')->name($attrs['name']);
+			$this->name = $name;
 			unset($attrs['name']);
 
-			$consume = true; 
-			$replacement = $this->getReplacement($name, $attrs, $consume); 
-			if($replacement === false) continue; 
+			$consume = true;
+			$replacement = $this->getReplacement($name, $attrs, $consume);
+			if($replacement === false) continue;
 
-			$openHTML = $matches[1][$key]; 
-			$closeHTML = $matches[3][$key]; 
+			$openHTML = $matches[1][$key];
+			$closeHTML = $matches[3][$key];
 
 			if($consume && $openHTML == $closeHTML) {
-				$this->value = str_replace($matches[0][$key], $replacement, $this->value); 
+				$this->value = str_replace($matches[0][$key], $replacement, $this->value);
 			} else {
-				$this->value = str_replace("$openTag$expression$closeTag", $replacement, $this->value); 
+				$this->value = str_replace("$openTag$expression$closeTag", $replacement, $this->value);
 			}
 		}
 
 		// restore output formatting state
 		if(!$of) $this->page->of(false);
 
-		$value = $this->value; 	
-		
+		$value = $this->value;
+
 		$this->value = $prevValue;
 		$this->page = $prevPage;
 		$this->field = $prevField;
@@ -229,9 +229,9 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	 */
 	public function render($value, Page $page = null, Field $field = null) {
 		if(is_null($page)) $page = $this->wire('page');
-		if(is_null($field)) $field = new Field(); 
+		if(is_null($field)) $field = new Field();
 		$this->formatValue($page, $field, $value);
-		return $value; 
+		return $value;
 	}
 
 	/**
@@ -245,21 +245,21 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 
 		$attrs = array();
 
-		$regx = 
-			'!(?:^|\b)' .		    // beginning or boundary 
-			'([-_a-z0-9]+)' .	    // 1. attribute name 
+		$regx =
+			'!(?:^|\b)' .		    // beginning or boundary
+			'([-_a-z0-9]+)' .	    // 1. attribute name
 			'\s*=\s*' . 		    // Equals
 			'(' .				    // 2. attribute value, possibly with quotes
-				'(["\']|&quot;)' .	// 3. open quote 
+				'(["\']|&quot;)' .	// 3. open quote
 				'.*?' . 		    // attribute value unquoted
-				'\3' .			    // close quote	
-			'|' .				    // OR 
+				'\3' .			    // close quote
+			'|' .				    // OR
 				'[^\'",\s]*' .		// unquoted value...
 			'),?' . 			    // optional comma, per PW selector style
-			'!i'; 
+			'!i';
 
 		if(!preg_match_all($regx, $expression, $matches)) {
-			return $attrs; 
+			return $attrs;
 		}
 
 		foreach($matches[1] as $key => $name) {
@@ -271,11 +271,11 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 			// where the 'name' isn't specifically called out as an attribute
 			// but is the first symbol in the expression
 			if(preg_match('!^([-_a-z0-9]+)([\s,]|$)!i', $expression, $matches)) {
-				$attrs['name'] = $matches[1]; 
+				$attrs['name'] = $matches[1];
 			}
 		}
 
-		return $attrs; 
+		return $attrs;
 	}
 
 	/**
@@ -292,35 +292,45 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 		$database = $this->wire('database');
 
 		$sql = 'SELECT `id`, `type`, `code` FROM hanna_code WHERE `name`=:name';
-		$query = $database->prepare($sql); 
-		$query->bindValue(':name', $name, PDO::PARAM_STR); 
+		$query = $database->prepare($sql);
+		$query->bindValue(':name', $name, \PDO::PARAM_STR);
 		$query->execute();
 		if(!$query->rowCount()) return false;
-		list($id, $type, $code) = $query->fetch(PDO::FETCH_NUM); 
+		list($id, $type, $code) = $query->fetch(\PDO::FETCH_NUM);
 		$query->closeCursor();
 
-		$query = $database->prepare("UPDATE hanna_code SET accessed=:time WHERE id=:id"); 
-		$query->bindValue(":time", time()); 
-		$query->bindValue(":id", $id); 
+		$query = $database->prepare("UPDATE hanna_code SET accessed=:time WHERE id=:id");
+		$query->bindValue(":time", time());
+		$query->bindValue(":id", $id);
 		$query->execute();
 
 		unset($attrs['name']);
 
 		// set default attributes, that haven't already been set by user
-		$defaultAttrs = $this->extractDefaultCodeAttrs($code); 
+		$defaultAttrs = $this->extractDefaultCodeAttrs($code);
 		foreach($defaultAttrs as $key => $value) {
-			if(!array_key_exists($key, $attrs)) $attrs[$key] = $value; 
+			if(!array_key_exists($key, $attrs)) $attrs[$key] = $value;
 		}
 
-		if($type & self::TYPE_JS) $value = $this->getJS($name, $code, $attrs); 
-			else if($type & self::TYPE_PHP) $value = $this->getPHP($name, $code, $attrs); 
-			else $value = $code; 
+		if($type & self::TYPE_JS) $value = $this->getJS($name, $code, $attrs);
+        else if($type & self::TYPE_PHP) $value = $this->getPHP($name, $code, $attrs);
+        else $value = $this->getText($name, $code, $attrs);
 
 		// Populate whether or not the surrounding tags should be consumed
 		$consume = !($type & self::TYPE_NOT_CONSUMING);
 
-		return $value; 
+		return $value;
 	}
+
+    /** Create the output for a text/HTML based Hanna code
+     * @param $name Hanna code name
+     * @param $code Code to insert
+     * @param array $attrs Attributes to include as variables
+     * @return string
+     */
+    protected function ___getText($name, $code, array $attrs) {
+        return $code;
+    }
 
 	/**
 	 * Create the output for a JS-based Hanna code
@@ -339,7 +349,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 
 		// build a series of $js var statements to represent the attribute name=values
 		foreach($attrs as $key => $value) {
-			$value = str_replace('"', '\\"', $value); 
+			$value = str_replace('"', '\\"', $value);
 			$attr .= "$key: \"$value\", ";
 			$vars .= "\nvar $key=attr.$key;";
 		}
@@ -354,13 +364,13 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 		} else if(strlen($vars)) {
 			// script tag is already present
 			// if we have vars to insert, put them after the opening script, but before the code
-			preg_match('/\s*(<script[^>]*>)(.*)/si', $code, $matches); 
-			$js = $matches[1] . $vars . $matches[2]; 
+			preg_match('/\s*(<script[^>]*>)(.*)/si', $code, $matches);
+			$js = $matches[1] . $vars . $matches[2];
 		} else {
 			// script tag already present and no vars to insert
-			$js = $code; 
+			$js = $code;
 		}
-		
+
 		return $js;
 	}
 
@@ -377,47 +387,47 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	protected function ___getPHP($name, $code, array $attrs) {
 
 		if(!is_dir($this->cachePath)) if(!wireMkdir($this->cachePath)) {
-			throw new WireException("Unable to create cache path: $this->cachePath"); 
+			throw new WireException("Unable to create cache path: $this->cachePath");
 		}
 
 		$file = $this->cachePath . $name . '.php';
 		$code = trim($code);
-		$openPHP = '<' . '?php'; 
+		$openPHP = '<' . '?php';
 		$firstLine = 'if(!defined("PROCESSWIRE")) die("no direct access");';
 
 		if(substr($code, 0, strlen($openPHP)) !== $openPHP) {
 			// prepend open PHP tag to code if not already present
-			$code = "$openPHP\n$firstLine\n$code"; 
+			$code = "$openPHP\n$firstLine\n$code";
 		} else {
 			// otherwise insert our $firstLine security check
-			$code = str_replace($openPHP, "$openPHP\n$firstLine\n", $code); 
+			$code = str_replace($openPHP, "$openPHP\n$firstLine\n", $code);
 		}
 
 		if(is_file($file) && file_get_contents($file) === $code) {
 			// file already there and same as what's in the DB
 		} else {
 			// write new file or overwrite existing
-			if(!file_put_contents($file, $code, LOCK_EX)) throw new WireException("Unable to write file: $file"); 
-			if($this->wire('config')->chmodFile) chmod($file, octdec($this->wire('config')->chmodFile));	
+			if(!file_put_contents($file, $code, LOCK_EX)) throw new WireException("Unable to write file: $file");
+			if($this->wire('config')->chmodFile) chmod($file, octdec($this->wire('config')->chmodFile));
 		}
 
-		$t = new TemplateFile($file); 
+		$t = new TemplateFile($file);
 
 		// populate user specified attrs
-		foreach($attrs as $key => $value) $t->set($key, $value); 
+		foreach($attrs as $key => $value) $t->set($key, $value);
 
 		// also populate them all into an $attrs array, if preferred
-		$t->set('attr', $attrs); 
+		$t->set('attr', $attrs);
 
 		// populate API variables
 		foreach($this->wire('all') as $key => $value) {
-			if($key != 'page') $t->set($key, $value); 
+			if($key != 'page') $t->set($key, $value);
 		}
 
 		// populate $page and $hanna variables that are context specific
 		// note $page may be different from wire('page')
 		$t->set('page', $this->page);
-		$t->set('hanna', $this); 
+		$t->set('hanna', $this);
 
 		return $t->render();
 	}
@@ -425,7 +435,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	/**
 	 * Extract default attributes stored in the code block
 	 *
-	 * Extracts hc_attr\nkey=value\nkey2=value2\nhc_attr to array('key' => $value, 'key2' => 'value2'); 
+	 * Extracts hc_attr\nkey=value\nkey2=value2\nhc_attr to array('key' => $value, 'key2' => 'value2');
 	 * and removes the section from $code
 	 *
 	 * @param string $code
@@ -434,24 +444,24 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	 */
 	public function extractDefaultCodeAttrs(&$code) {
 
-		$pos = strpos($code, 'hc_attr*/'); 
+		$pos = strpos($code, 'hc_attr*/');
 		if($pos === false) return array();
 
-		$attrStr = trim(substr($code, 9, $pos-9)); 
-		$code = trim(substr($code, $pos+10)); 
-		$lines = explode("\n", $attrStr); 
+		$attrStr = trim(substr($code, 9, $pos-9));
+		$code = trim(substr($code, $pos+10));
+		$lines = explode("\n", $attrStr);
 		$attrs = array();
 
 		foreach($lines as $line) {
-			$pos = strpos($line, '='); 
-			$name = substr($line, 0, $pos); 
-			$value = substr($line, $pos); 
-			$name = trim($name, "\r\n="); 
+			$pos = strpos($line, '=');
+			$name = substr($line, 0, $pos);
+			$value = substr($line, $pos);
+			$name = trim($name, "\r\n=");
 			// filter out API variable names and reserved words
-			if(empty($name)) continue; 
+			if(empty($name)) continue;
 			if(!is_null($this->wire($name)) || in_array($name, array('name', 'hanna', 'attr'))) $name = "_$name";
-			$value = trim($value, "\r\n=\""); 
-			$attrs[$name] = $value; 
+			$value = trim($value, "\r\n=\"");
+			$attrs[$name] = $value;
 		}
 
 		return $attrs;
@@ -464,20 +474,20 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	 */
 	public function ___install() {
 
-		$sql = 	
-			"CREATE TABLE hanna_code (" . 
-			"`id` int unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY, " . 
-			"`name` varchar(128) NOT NULL, " . 
-			"`type` tinyint NOT NULL DEFAULT 0, " . 
-			"`code` text, " . 
-			"`modified` int unsigned NOT NULL default 0, " . 
-			"`accessed` int unsigned NOT NULL default 0, " . 
-			"UNIQUE `name`(`name`)"  . 
+		$sql =
+			"CREATE TABLE hanna_code (" .
+			"`id` int unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY, " .
+			"`name` varchar(128) NOT NULL, " .
+			"`type` tinyint NOT NULL DEFAULT 0, " .
+			"`code` text, " .
+			"`modified` int unsigned NOT NULL default 0, " .
+			"`accessed` int unsigned NOT NULL default 0, " .
+			"UNIQUE `name`(`name`)"  .
 			")";
 		try {
-			$this->wire('database')->exec($sql); 
-		} catch(Exception $e) {
-			$this->error($e->getMessage()); 
+			$this->wire('database')->exec($sql);
+		} catch(\Exception $e) {
+			$this->error($e->getMessage());
 		}
 	}
 
@@ -486,25 +496,25 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	 *
 	 */
 	public function ___uninstall() {
-		parent::___uninstall(); 
+		parent::___uninstall();
 
-		$sql = "DROP TABLE hanna_code"; 
+		$sql = "DROP TABLE hanna_code";
 
 		try {
 			$this->wire('database')->exec($sql);
-		} catch(Exception $e) {
-			$this->error($e->getMessage()); 
+		} catch(\Exception $e) {
+			$this->error($e->getMessage());
 		}
 
 		if($this->cachePath && is_dir($this->cachePath)) {
-			$this->message("Removing cache path: $this->cachePath"); 
-			wireRmdir($this->cachePath, true); 
+			$this->message("Removing cache path: $this->cachePath");
+			wireRmdir($this->cachePath, true);
 		}
 	}
 
 	/**
 	 * Module configuration screen
-	 * 
+	 *
 	 * @param array $data
 	 * @return InputfieldWrapper
 	 *
@@ -514,19 +524,19 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 		$inputfields = new InputfieldWrapper();
 
 		/** @var InputfieldText $f */
-		$f = wire('modules')->get('InputfieldText'); 
-		$f->attr('name', 'openTag'); 
-		$f->attr('value', empty($data['openTag']) ? self::DEFAULT_OPEN_TAG : $data['openTag']); 
-		$f->label = __('Open Tag'); 
+		$f = wire('modules')->get('InputfieldText');
+		$f->attr('name', 'openTag');
+		$f->attr('value', empty($data['openTag']) ? self::DEFAULT_OPEN_TAG : $data['openTag']);
+		$f->label = __('Open Tag');
 		$f->columnWidth = 50;
-		$inputfields->add($f); 
+		$inputfields->add($f);
 
-		$f = wire('modules')->get('InputfieldText'); 
-		$f->attr('name', 'closeTag'); 
-		$f->attr('value', empty($data['closeTag']) ? self::DEFAULT_CLOSE_TAG : $data['closeTag']); 
-		$f->label = __('Close Tag'); 
+		$f = wire('modules')->get('InputfieldText');
+		$f->attr('name', 'closeTag');
+		$f->attr('value', empty($data['closeTag']) ? self::DEFAULT_CLOSE_TAG : $data['closeTag']);
+		$f->label = __('Close Tag');
 		$f->columnWidth = 50;
-		$inputfields->add($f); 
+		$inputfields->add($f);
 
 		return $inputfields;
 	}
