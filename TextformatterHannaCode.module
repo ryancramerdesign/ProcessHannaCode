@@ -1,4 +1,4 @@
-<?php
+<?php namespace ProcessWire;
 
 /**
  * ProcessWire Hanna Code Textformatter
@@ -15,7 +15,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 
 	public static function getModuleInfo() {
 		return array(
-			'title' => __('Hanna Code Text Formatter', __FILE__), 
+			'title' => __('Hanna Code Text Formatter', __FILE__),
 			'version' => 20, 
 			'summary' => __('Easily insert any complex HTML, Javascript or PHP output in your ProcessWire content by creating your own Hanna code tags.', __FILE__),
 			'installs' => 'ProcessHannaCode',
