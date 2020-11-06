@@ -181,7 +181,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		$query->execute();
 		$numRows = 0;
 
-		while($row = $query->fetch(PDO::FETCH_NUM)) {
+		while($row = $query->fetch(\PDO::FETCH_NUM)) {
 			list($id, $name, $type, $modified, $accessed, $code) = $row; 
 			$attrs = '';
 			foreach($this->hanna->extractDefaultCodeAttrs($code) as $attrName => $attrValue) {
@@ -267,7 +267,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		$query = $this->database->prepare("SELECT COUNT(*) FROM hanna_code WHERE name=:name"); 
 		$query->bindValue(':name', $name); 
 		$query->execute();
-		list($n) = $query->fetch(PDO::FETCH_NUM); 
+		list($n) = $query->fetch(\PDO::FETCH_NUM); 
 		if($n > 0) {
 			$this->error($this->_('Hanna Code with that name already exists')); 
 			$this->session->redirect('../'); 
@@ -357,7 +357,7 @@ _OUT;
 			$query->bindValue(':id', $id); 
 			$query->execute();
 			if(!$query->rowCount()) throw new WireException("Unknown ID"); 
-			list($name, $type, $code) = $query->fetch(PDO::FETCH_NUM);
+			list($name, $type, $code) = $query->fetch(\PDO::FETCH_NUM);
 			$exportData = array('name' => $name, 'type' => $type, 'code' => $code); 
 			$attr = '';
 			foreach($this->hanna->extractDefaultCodeAttrs($code) as $attrName => $attrValue) {
@@ -596,7 +596,7 @@ _OUT;
 			$query = $database->prepare("SELECT `type` FROM hanna_code WHERE id=:id"); 	
 			$query->bindValue(':id', $id); 
 			$query->execute();
-			list($prevType) = $query->fetch(PDO::FETCH_NUM); 
+			list($prevType) = $query->fetch(\PDO::FETCH_NUM); 
 		}
 
 		if(($type == $phpType || $prevType == $phpType) && !$this->hasPermission('hanna-code-php')) {
