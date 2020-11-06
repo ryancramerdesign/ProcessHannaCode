@@ -108,8 +108,8 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 	public function init() {
 		parent::init(); // required
 		$data = $this->modules->getModuleConfigData('TextformatterHannaCode'); 
-		$this->set('openTag', isset($data['openTag']) ? $data['openTag'] : \TextformatterHannaCode::DEFAULT_OPEN_TAG); 
-		$this->set('closeTag', isset($data['closeTag']) ? $data['closeTag'] : \TextformatterHannaCode::DEFAULT_CLOSE_TAG); 
+		$this->set('openTag', isset($data['openTag']) ? $data['openTag'] : TextformatterHannaCode::DEFAULT_OPEN_TAG); 
+		$this->set('closeTag', isset($data['closeTag']) ? $data['closeTag'] : TextformatterHannaCode::DEFAULT_CLOSE_TAG); 
 		$this->set('typeLabels', array(
 			0 => $this->_('Text/HTML'),
 			1 => $this->_('Javascript'),
@@ -150,7 +150,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 	}
 
 	protected function editable($type) {
-		if($type == \TextformatterHannaCode::TYPE_PHP) return $this->hasPermission('hanna-code-php'); 
+		if($type == TextformatterHannaCode::TYPE_PHP) return $this->hasPermission('hanna-code-php'); 
 		return $this->hasPermission('hanna-code-edit'); 
 	}
 
@@ -191,7 +191,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 			if(preg_match('/[a-zA-Z0-9]$/', $this->openTag)) $name = " name=\"$name\"";
 			$tag = $this->openTag . $name . $attrs . $this->closeTag; 
 
-			if($type & \TextformatterHannaCode::TYPE_NOT_CONSUMING) $type -= \TextformatterHannaCode::TYPE_NOT_CONSUMING; 
+			if($type & TextformatterHannaCode::TYPE_NOT_CONSUMING) $type -= TextformatterHannaCode::TYPE_NOT_CONSUMING; 
 
 			$table->row(array(
 				wire('sanitizer')->entities($name) => "edit/?id=$id",
@@ -275,7 +275,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		}
 
 		$data['type'] = (int) $data['type']; 
-		if($data['type'] == \TextformatterHannaCode::TYPE_PHP && !$this->hasPermission('hanna-code-php')) {
+		if($data['type'] == TextformatterHannaCode::TYPE_PHP && !$this->hasPermission('hanna-code-php')) {
 			throw new WireException("You don't have permission to add/edit PHP Hanna Codes"); 
 		}
 
@@ -399,17 +399,17 @@ _OUT;
 		$typeField = $this->modules->get('InputfieldRadios'); 
 		$typeField->attr('name', 'hc_type'); 
 		foreach($this->typeLabels as $key => $label) {
-			if($key == \TextformatterHannaCode::TYPE_PHP && !$this->editable($key) && $type != $key) continue; 
+			if($key == TextformatterHannaCode::TYPE_PHP && !$this->editable($key) && $type != $key) continue; 
 			$typeField->addOption($key, $label); 
 		}
-		$typeField->attr('value', $type & \TextformatterHannaCode::TYPE_NOT_CONSUMING ? $type - \TextformatterHannaCode::TYPE_NOT_CONSUMING : $type); 
+		$typeField->attr('value', $type & TextformatterHannaCode::TYPE_NOT_CONSUMING ? $type - TextformatterHannaCode::TYPE_NOT_CONSUMING : $type); 
 		$typeField->label = $this->_('Type'); 
 		$typeField->optionColumns = 1; 
 		$tab->add($typeField); 
 
 		$yes = $this->_('Yes');
 		$no = $this->_('No'); 
-		$value = $type & \TextformatterHannaCode::TYPE_NOT_CONSUMING ? 1 : 0;
+		$value = $type & TextformatterHannaCode::TYPE_NOT_CONSUMING ? 1 : 0;
 		/** @var InputfieldRadios $f */
 		$f = $this->modules->get('InputfieldRadios'); 
 		$f->attr('name', 'hc_not_consuming'); 
@@ -590,7 +590,7 @@ _OUT;
 		$testAfterSave = $this->input->post('hc_save_test'); 
 		$prevType = 0;
 		$database = $this->database; 
-		$phpType = \TextformatterHannaCode::TYPE_PHP; 
+		$phpType = TextformatterHannaCode::TYPE_PHP; 
 		
 		if($id) {
 			$query = $database->prepare("SELECT `type` FROM hanna_code WHERE id=:id"); 	
@@ -658,7 +658,7 @@ _OUT;
 		}
 
 		if($notc) {
-			$type = $type | \TextformatterHannaCode::TYPE_NOT_CONSUMING; 
+			$type = $type | TextformatterHannaCode::TYPE_NOT_CONSUMING; 
 		}
 
 		if(empty($name)) {
