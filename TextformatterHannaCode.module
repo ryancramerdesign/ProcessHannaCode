@@ -293,10 +293,10 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 
 		$sql = 'SELECT `id`, `type`, `code` FROM hanna_code WHERE `name`=:name';
 		$query = $database->prepare($sql); 
-		$query->bindValue(':name', $name, PDO::PARAM_STR); 
+		$query->bindValue(':name', $name, \PDO::PARAM_STR); 
 		$query->execute();
 		if(!$query->rowCount()) return false;
-		list($id, $type, $code) = $query->fetch(PDO::FETCH_NUM); 
+		list($id, $type, $code) = $query->fetch(\PDO::FETCH_NUM); 
 		$query->closeCursor();
 
 		$query = $database->prepare("UPDATE hanna_code SET accessed=:time WHERE id=:id"); 
