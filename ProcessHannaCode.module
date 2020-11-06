@@ -1,4 +1,4 @@
-<?php
+<?php namespace ProcessWire;
 
 /**
  * Process Hanna Code
@@ -32,7 +32,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 				'hanna-code-php' => 'Add/edit/delete Hanna Codes (text/html, javascript and PHP)'
 				), 
 			'icon' => 'sun-o', 
-			'requires' => 'TextformatterHannaCode'
+			'requires' => ['ProcessWire>=3.0', 'TextformatterHannaCode']
 			); 
 	}
 
