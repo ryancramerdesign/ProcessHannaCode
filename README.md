@@ -68,6 +68,7 @@ value.
 - Paste in the following for the *code*:
 
 ```
+<?php namespace ProcessWire;
 foreach($page->children as $child) {
   echo "<p><a href='$child->url'>$child->title</a>";
 }
@@ -83,6 +84,8 @@ Now lets take the above example further...
 - Go back and edit your "children" Hanna code, as we are going to modify it to respond to a "parent" attribute. Change the code to this:
 
 ```
+<?php namespace ProcessWire;
+
 if(isset($parent)) {
   // If $parent is an ID or path, lets convert it to a Page
   $parent = $pages->get($parent);
@@ -121,7 +124,8 @@ $page->body = $hanna->render($page->body);
 
 1. Your code should `echo` or `print` the value you want to appear as the replacement for the tag.
 
-2. It is not necessary to begin or close your statement with open/close PHP tags. Though you may use them when/if necessary.
+2. It is not necessary to begin or close your statement with open/close PHP tags. However an opened PHP tag is recommended at least for syntax highlighting. 
+   I recommend using `<?php namespace ProcessWire;` as your opening PHP tag.
 
 3. Your code is executed the same way as a ProcessWire template file and all API variables are locally scoped.
    Meaning, you can call upon `$page`, `$pages`, or any other API variables. directly. See also the PHP Properties section.
@@ -212,7 +216,8 @@ cIjtcclxufSBlbHNlIHtcclxuICBlY2hvICcnO1xyXG59In0=/!HannaCode
 
 
 ------
-Copyright 2016 by Ryan Cramer
+Copyright 2021 by Ryan Cramer
+(Originally released in 2013)
 
 
 
