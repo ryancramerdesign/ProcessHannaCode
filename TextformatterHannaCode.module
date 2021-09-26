@@ -149,6 +149,18 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	}
 
 	/**
+	 * Format value when Page/Field not known 
+	 * 
+	 * @param string $str
+	 * 
+	 */
+	public function format(&$str) {
+		$page = new NullPage();
+		$field = new NullField();
+		$this->formatValue($page, $field, $str);
+	}
+
+	/**
 	 * For the Textformatter interface
 	 * 
 	 * @param Page $page
@@ -186,8 +198,12 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 		$this->value = $value;
 
 		// save output formatting state and then ensure it is ON
-		$of = $this->page->of();
-		if(!$of) $this->page->of(true);
+		if($this->page->id) {
+			$of = $this->page->of();
+			if(!$of) $this->page->of(true);
+		} else {
+			$of = true;
+		}
 
 		foreach($matches[2] as $key => $expression) {
 			
