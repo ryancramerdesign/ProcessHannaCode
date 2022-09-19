@@ -40,7 +40,7 @@ a web browser is a big security problem when in the wrong hands. For this reason
 are disabled unless ProcessWire is in debug mode or you have specifically disabled Hanna Code’s “safe mode”.
 
 ProcessWire’s debug mode can be enabled by setting `$config->debug = true` in your /site/config.php file. Or if you
-prefer, Hanna Code’s safe mode can be disabled by setting `$config->HannaCodeSafeMode = false;` in /site/config.php.
+prefer, Hanna Code’s editor can be specifically enabled by setting  `$config->HannaCodeEdit = true;` in /site/config.php.
 For live/production sites, be sure to reverse these changes once you are done editing or adding Hanna Codes. 
 
 These considerations are primarily to protect your server just in case a superuser account were ever to be compromised. 
