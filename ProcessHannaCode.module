@@ -24,7 +24,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		return array(
 			'title' => 'Hanna Code', 
 			'summary' => 'Easily insert any complex HTML, Javascript or PHP output in your ProcessWire content by creating your own Hanna code tags.',
-			'version' => 30, 
+			'version' => 31, 
 			'permission' => 'hanna-code', 
 			'permissions' => array(
 				'hanna-code' => 'List and view Hanna Codes',
@@ -71,7 +71,8 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 	 * Ace editor version
 	 *
 	 */
-	const aceVersion = '1.4.12';
+	const aceVersion = '1.10.1';
+	// const aceVersion = '1.4.12';
 
 	/**
 	 * Ace behavior pairing 
@@ -143,7 +144,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 	 */
 	public function textformatter() {
 		if($this->textformatter === null) {
-			$this->textformatter = $this->modules->get('TextformatterHannaCode'); 
+			$this->textformatter = $this->wire()->modules->get('TextformatterHannaCode'); 
 		}
 		return $this->textformatter;
 	}
@@ -618,6 +619,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 			$form->add($f); 
 
 			if($id) { 
+				/** @var InputfieldSubmit $f */
 				$f = $modules->get('InputfieldSubmit'); 
 				$f->attr('id+name', 'hc_save_test'); 
 				$f->attr('value', $this->_('Save & Test')); 
@@ -625,6 +627,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 				$form->add($f); 
 			}
 
+			/** @var InputfieldSubmit $f */
 			$f = $modules->get('InputfieldSubmit'); 
 			$f->attr('id+name', 'hc_save_exit'); 
 			$f->setSecondary(true);
@@ -665,7 +668,6 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		$testAfterSave = $input->post('hc_save_test'); 
 		$prevType = 0;
 		$phpType = HannaCode::typePHP; 
-		$h = null;
 		
 		if($id) {
 			$h = $this->hannaCodes()->get($id); 
@@ -680,14 +682,14 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		if($type !== $phpType && $type !== HannaCode::typeJS && $type !== HannaCode::typeHTML) {
 			throw new WireException('Unknown HannaCode type'); 
 		}
+		
+		$form->processInput($input->post);
 
 		if($delete && $delete === $id) {
 			$this->hannaCodes()->delete($h);
 			$this->message($this->_('Deleted Hanna Code')); 
 			$this->session->redirect('../'); 
 		}
-
-		$form->processInput($input->post); 
 
 		// session specific
 		$userData = array(
@@ -831,8 +833,10 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 
 	/**
 	 * Get Ace Editor file options for themes and keybindings
+	 * 
+	 * @return array
 	 *
-	 */
+	 */ 
 	protected static function getAceOptions() {
 
 		$options = array(
@@ -882,7 +886,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		$f->attr('id+name', 'aceTheme');
 		foreach($aceOptions['themes'] as $theme) $f->addOption($theme); 
 		$f->attr('value', !empty($data['aceTheme']) ? $data['aceTheme'] : self::defaultAceTheme); 
-		$f->notes = $this->_('See the [Ace Editor demo](http://ace.c9.io/build/kitchen-sink.html) to preview what the different themes look like.'); 
+		$f->notes = $this->_('See the [Ace Editor demo](https://ace.c9.io/build/kitchen-sink.html) to preview what the different themes look like.'); 
 		$f->columnWidth = 34;
 		$form->add($f); 
 
