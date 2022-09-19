@@ -24,7 +24,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		return array(
 			'title' => 'Hanna Code', 
 			'summary' => 'Easily insert any complex HTML, Javascript or PHP output in your ProcessWire content by creating your own Hanna code tags.',
-			'version' => 31, 
+			'version' => 32, 
 			'permission' => 'hanna-code', 
 			'permissions' => array(
 				'hanna-code' => 'List and view Hanna Codes',
@@ -72,7 +72,6 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 	 *
 	 */
 	const aceVersion = '1.10.1';
-	// const aceVersion = '1.4.12';
 
 	/**
 	 * Ace behavior pairing 
@@ -95,10 +94,18 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 	protected $textformatter = null;
 
 	/**
-	 * @var null|HannaCodes
+	 * Allow HannaCodes to be edited and saved?
+	 * 
+	 * @var bool|null 
 	 * 
 	 */
-	protected $hannaCodes = null;
+	protected $allowSave = null;
+
+	/**
+	 * @var string 
+	 * 
+	 */
+	protected $saveInfo = '';
 
 	/**
 	 * Construct
@@ -118,11 +125,46 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 	 */
 	public function init() {
 		parent::init(); // required
+		
 		$this->set('typeLabels', array(
 			HannaCode::typeHTML => $this->_('Text/HTML'),
 			HannaCode::typeJS => $this->_('Javascript code'),
 			HannaCode::typePHP => $this->_('PHP code'),
 		));
+		
+		$config = $this->wire()->config;
+		$hannaEdit = $config->get('HannaCodeEdit');
+		$recommended = $this->_('This is recommended for security on live/production sites.');
+		
+		if(is_bool($hannaEdit)) {
+			$this->allowSave = $hannaEdit;
+		} else {
+			$this->allowSave = $config->debug;
+		}
+		
+		if($this->allowSave) {
+			if($hannaEdit === true) {
+				$suggestion = '$config-&gt;HannaCodeEdit = false;';
+			} else {
+				$suggestion = '$config-&gt;debug = false;';
+			}
+			$this->saveInfo = sprintf(
+				$this->_('Please set %s in your {file} file when finished editing Hanna Codes.') . " $recommended", 
+				"<code>$suggestion</code>"
+			);
+		} else {
+			$this->saveInfo = 
+				'<strong>' . $this->_('“Edit” and “Add” features are currently disabled.') . '</strong> ' . 
+				$recommended . ' ' . 
+				sprintf(
+					$this->_('To enable, edit {file} and temporarily set %s or %s'),
+					'<code>$config-&gt;debug = true;</code>', 
+					'<code>$config-&gt;HannaCodeEdit = true;</code>'
+				) . ' ' . 
+				$this->_('(Remember to reverse this change when you are done editing/adding Hanna Codes, especially on live sites).'); 
+		} 
+		
+		$this->saveInfo = str_replace('{file}', '<u>/site/config.php</u>', $this->saveInfo);
 	}
 	
 	/**
@@ -232,6 +274,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		$typeLabels = $this->typeLabels;
 		$sort = $this->wire()->input->get->text('sort');
 		$editable = $this->hasPermission('hanna-code-edit');
+		$welcome = '';
 		$out = '';
 		
 		if(empty($sort)) $sort = 'name';
@@ -262,29 +305,45 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 			
 		} else if($editable) {
 			// no Hanna codes
-			$this->message($this->_('No Hanna Codes yet, go ahead and add one!'));
+			if($this->allowSave) {
+				$welcome = $this->_('No Hanna Codes yet, go ahead and add one!');
+			} else {
+				$welcome = 
+					$this->_('There are no Hanna Codes yet! Please follow the instructions below to start using Hanna Code.') . 
+					'<br /><br />' . 
+					$this->saveInfo;
+			}
 		} else {
-			$this->warning($this->_('There are no Hanna Codes to display.'));
-		}
-
-		if($editable) {
-			/** @var InputfieldButton $button1 */
-			$button1 = $modules->get('InputfieldButton'); 
-			$button1->attr('id', 'button_add'); 
-			$button1->attr('value', $this->_('Add New')); 
-			$button1->attr('href', './edit/'); 
-			$button1->showInHeader(true);
-
-			/** @var InputfieldButton $button2 */
-			$button2 = $modules->get('InputfieldButton'); 
-			$button2->attr('id', 'button_import'); 
-			$button2->attr('value', $this->_('Import')); 
-			$button2->attr('href', './import/'); 
-			$button2->setSecondary(true);
-			
-			$out .= $button1->render() . $button2->render();
+			$welcome = $this->_('There are no Hanna Codes to display.');
 		}
 	
+		if($welcome) $out .= "<p>$welcome</p>";
+
+		if($editable) {
+			if($this->allowSave) {
+				/** @var InputfieldButton $button1 */
+				$button1 = $modules->get('InputfieldButton');
+				$button1->attr('id', 'button_add');
+				$button1->attr('value', $this->_('Add New'));
+				$button1->attr('href', './edit/');
+				$button1->showInHeader(true);
+
+				/** @var InputfieldButton $button2 */
+				$button2 = $modules->get('InputfieldButton');
+				$button2->attr('id', 'button_import');
+				$button2->attr('value', $this->_('Import'));
+				$button2->attr('href', './import/');
+				$button2->setSecondary(true);
+
+				$out .= $button1->render() . $button2->render();
+			}
+		
+			if(count($hannaCodes) || $this->allowSave) {
+				$out .= "<p class='description'>$this->saveInfo</p>";
+			}
+		}
+	
+
 		return $out;
 	}
 
@@ -303,6 +362,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		$session = $this->wire()->session;
 
 		if(!$this->hasPermission('hanna-code-edit')) throw new WireException("No permission"); 
+		if(!$this->allowSave) throw new WireException("Save disabled");
 		
 		/** @var InputfieldForm $form */
 		$form = $modules->get('InputfieldForm'); 
@@ -434,6 +494,10 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 			$exportData = null;
 			$this->headline($this->_("Adding New Hanna Code")); 
 			if(!$this->editable($h)) throw new WireException("You don't have permission to add new Hanna Codes"); 
+			if(!$this->allowSave) {
+				$this->warning($this->saveInfo, Notice::allowMarkup);
+				$this->wire()->session->redirect('../');
+			}
 		}
 
 		$editable = $this->editable($h); 
@@ -610,7 +674,7 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 		$f->attr('value', $id); 
 		$form->add($f); 
 
-		if($editable) { 
+		if($editable && $this->allowSave) { 
 			/** @var InputfieldSubmit $f */
 			$f = $modules->get('InputfieldSubmit'); 
 			$f->showInHeader(true);
@@ -637,8 +701,16 @@ class ProcessHannaCode extends Process implements ConfigurableModule {
 			if($input->post('hc_save') || $input->post('hc_save_exit') || $input->post('hc_save_test')) {
 				$this->save($form);
 			}
+		
+			$icon = wireIconMarkup('warning');
+			$form->appendMarkup .= "<p class='description'>$icon $this->saveInfo</p>";
+			
+		} else if($editable) {
+			$notice = new NoticeMessage($this->saveInfo, Notice::allowMarkup);
+			$notice->icon = 'sun-o fa-spin';
+			$notice->class = 'HannaCode';
+			$this->wire()->notices->add($notice);
 		}
-
 
 		$config->scripts->add($config->urls('ProcessHannaCode') . "ace-" . self::aceVersion . "/src-min/ace.js"); 
 	

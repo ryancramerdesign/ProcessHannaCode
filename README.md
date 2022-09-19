@@ -26,7 +26,24 @@ should be used around the attribute value when the value contains whitespace or 
 3. Click "install" for **TextformatterHannaCode** (Hanna Code Text Formatter)
 4. Now to go Setup > Fields and locate the Textarea field(s) that you want to use Hanna codes with ("body" for instance).
 5. When editing the field, click the "details" tab, and select "Hanna Code Text Formatter" as the Textformatter. Save.
-6. Now go to Setup > Hanna Code and start defining your Hanna Codes! You may want to use one of the examples from this document to get started.
+6. To add or edit Hanna Codes, ProcessWire must be in debug mode, or Hanna Code must have its “safe mode’ disabled. 
+   See the “Security” section below this for more details and instructions
+8. Now go to Setup > Hanna Code and start defining your Hanna Codes! You may want to use one of the examples from this document to get started.
+
+## Security
+
+There are major security implications with a tool that will let you enter unfiltered text and code from your web browser.
+As a result, Hanna codes are meant for definition only by superusers and we recommend keeping it that way.
+
+Hanna Code editing is a development task and is meant only for sites in development. Access to edit PHP or JS scripts from
+a web browser is a big security problem when in the wrong hands. For this reason, editing features
+are disabled unless ProcessWire is in debug mode or you have specifically disabled Hanna Code’s “safe mode”.
+
+ProcessWire’s debug mode can be enabled by setting `$config->debug = true` in your /site/config.php file. Or if you
+prefer, Hanna Code’s safe mode can be disabled by setting `$config->HannaCodeSafeMode = false;` in /site/config.php.
+For live/production sites, be sure to reverse these changes once you are done editing or adding Hanna Codes. 
+
+These considerations are primarily to protect your server just in case a superuser account were ever to be compromised. 
 
 ## Tag format
 
@@ -105,11 +122,6 @@ foreach($parent->children as $child) {
 - View the page and you should now see it showing the children of the homepage (or of another parent you specified). 
 
 **Please see the Javascript and PHP usage notes on the Hanna code entry screen.**
-
-## Security 
-
-There are major security implications with a tool that will let you enter unfiltered text and code from your web browser.
-As a result, Hanna codes are meant for definition only by superusers and we recommend keeping it that way. 
 
 ## Using Hanna Code from the API
 
