@@ -414,7 +414,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 			$code = "$openPHP\n$firstLine\n$code"; 
 		} else {
 			// otherwise insert our $firstLine security check
-			$code = str_replace($openPHP, "$openPHP\n$firstLine\n", $code); 
+			$code = str_replace($php, "$openPHP\n$firstLine\n", $code); 
 		}
 
 		if(is_file($file) && file_get_contents($file) === $code) {
