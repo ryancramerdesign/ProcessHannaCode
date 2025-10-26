@@ -228,9 +228,14 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 			$closeHTML = $matches[3][$key]; 
 
 			if($consume && $openHTML == $closeHTML) {
-				$this->value = str_replace($matches[0][$key], $replacement, $this->value); 
+				$original = $matches[0][$key];
 			} else {
-				$this->value = str_replace("$openTag$expression$closeTag", $replacement, $this->value); 
+				$original = "$openTag$expression$closeTag";
+			}
+			$originalLen = strlen($original);
+			$originalPos = strpos($this->value, $original);
+			if ($originalPos !== false) {
+				$this->value = substr_replace($this->value, $replacement, $originalPos, $originalLen); 
 			}
 		}
 
