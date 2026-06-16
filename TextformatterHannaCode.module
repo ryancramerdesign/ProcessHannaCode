@@ -289,7 +289,15 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 		}
 
 		foreach($matches[1] as $key => $name) {
-			$attrs[$name] = trim($matches[2][$key], "'\"");
+			$value = $matches[2][$key];
+			if($matches[3][$key] === '&quot;') {
+				// Strip &quot; entities used as quote delimiters
+				if(strpos($value, '&quot;') === 0) $value = substr($value, 6);
+				if(substr($value, -6) === '&quot;') $value = substr($value, 0, -6);
+				$attrs[$name] = $value;
+			} else {
+				$attrs[$name] = trim($value, "'\"");
+			}
 		}
 
 		if(empty($attrs['name'])) {
