@@ -253,7 +253,7 @@ class TextformatterHannaCode extends Textformatter implements ConfigurableModule
 	 * @return string
 	 *
 	 */
-	public function render($value, Page $page = null, Field $field = null) {
+	public function render($value, $page = null, $field = null) {
 		if(is_null($page)) $page = $this->wire()->page;
 		if(is_null($field)) $field = $this->wire(new Field()); 
 		$this->formatValue($page, $field, $value);
